@@ -18,6 +18,8 @@
 
 #include "zklua.h"
 
+static FILE *zklua_log_stream = NULL;
+
 void watcher_dispatch(zhandle_t *zh, int type, int state,
         const char *path, void *watcherCtx)
 {
@@ -329,16 +331,25 @@ static int zklua_is_unrecoverable(lua_State *L)
 
 static int zklua_set_debug_level(lua_State *L)
 {
-    zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
 }
 
 static int zklua_set_log_stream(lua_State *L)
 {
-    zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
 }
 
 static int zklua_deterministic_conn_order(lua_State *L)
 {
+    size_t yesorno_len = 0;
+    const char *yesorno = luaL_checklstring(L, 1, &yesorno_len);
+    if (strcasecmp(yesorno, "yes") || strcasecmp(yesorno, "true")) {
+        zoo_deterministic_conn_order(1);
+    } else if (strcasecmp(yesorno, "no") || strcasecmp(yesorno, "false")) {
+        zoo_deterministic_conn_order(0);
+    } else {
+        return luaL_error(L, "invalid argument: please choose "
+                "(yes, no) or (true, false)");
+    }
+    return 0;
 }
 
 static int zklua_create(lua_State *L)
