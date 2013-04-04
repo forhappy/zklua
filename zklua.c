@@ -25,8 +25,8 @@ void watcher_dispatch(zhandle_t *zh, int type, int state,
     lua_State *L = wrapper->L;
     void *context = wrapper->context;
     lua_pushvalue(L, 2);
-    lua_pushnumber(L, type);
-    lua_pushnumber(L, state);
+    lua_pushinteger(L, type);
+    lua_pushinteger(L, state);
     lua_pushstring(L, path);
     if (context != NULL) {
         lua_pushstring(L, context);
@@ -132,6 +132,9 @@ static int zklua_init(lua_State *L)
 
     zklua_handle_t *handle = (zklua_handle_t *)lua_newuserdata(L,
             sizeof(zklua_handle_t));
+    luaL_getmetatable(L, ZKLUA_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+
     host = luaL_checklstring(L, 1, &host_len);
     if (_zklua_check_host(host)) {
         return luaL_error(L, "invalid arguments:"
@@ -180,7 +183,18 @@ static int zklua_init(lua_State *L)
 }
 
 static int zklua_close(lua_State *L)
-{}
+{
+    int ret = 0;
+    zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (handle->zh != NULL) {
+        ret = zookeeper_close(handle->zh);
+        handle->zh = NULL;
+    } else {
+        return luaL_error(L, "unable to close the zookeeper handle.");
+    }
+    lua_pushinteger(L, ret);
+    return 1;
+}
 
 static int zklua_client_id(lua_State *L)
 {}
@@ -365,6 +379,7 @@ static const luaL_Reg zklua[] =
 
 int luaopen_zklua(lua_State *L)
 {
+    luaL_newmetatable(L, ZKLUA_METATABLE_NAME);
 #if LUA_VERSION_NUM == 502
     luaL_newlib(L, zklua);
 #else

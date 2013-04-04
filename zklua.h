@@ -23,6 +23,8 @@
 
 #include <zookeeper/zookeeper.h>
 
+#define ZKLUA_METATABLE_NAME "ZKLUA_HANDLE"
+
 typedef struct zklua_handle_s zklua_handle_t;
 typedef struct zklua_watcher_context_s zklua_watcher_context_t;
 typedef struct zklua_completion_data_s zklua_completion_data_t;
