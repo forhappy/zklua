@@ -194,6 +194,7 @@ static int zklua_close(lua_State *L)
     } else {
         return luaL_error(L, "unable to close the zookeeper handle.");
     }
+    if (zklua_log_stream != NULL) fclose(zklua_log_stream);
     lua_pushinteger(L, ret);
     return 1;
 }
@@ -240,7 +241,11 @@ static int zklua_process(lua_State *L)
 
 static int zklua_state(lua_State *L)
 {
+    int ret = 0;
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    ret = zoo_state(handle->zh);
+    lua_pushinteger(L, ret);
+    return 1;
 }
 
 static int zklua_acreate(lua_State *L)
@@ -316,7 +321,10 @@ static int zklua_aset_acl(lua_State *L)
 
 static int zklua_error(lua_State *L)
 {
-    zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    int code = luaL_checkint(L, -1);
+    const char *errstr = zerror(code);
+    lua_pushstring(L, errstr);
+    return 1;
 }
 
 static int zklua_add_auth(lua_State *L)
@@ -326,7 +334,15 @@ static int zklua_add_auth(lua_State *L)
 
 static int zklua_is_unrecoverable(lua_State *L)
 {
+    int ret = 0;
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (handle->zh != NULL) {
+        ret = is_unrecoverable(handle->zh);
+        lua_pushinteger(L, ret);
+        return 1;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_set_debug_level(lua_State *L)
