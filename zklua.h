@@ -23,17 +23,26 @@
 
 #include <zookeeper/zookeeper.h>
 
-typedef struct zklua_completion_data_s zklua_completion_data_t;
 typedef struct zklua_handle_s zklua_handle_t;
+typedef struct zklua_watcher_context_s zklua_watcher_context_t;
+typedef struct zklua_completion_data_s zklua_completion_data_t;
 
 struct zklua_handle_s {
     zhandle_t *zh;
+};
+
+struct zklua_watcher_context_s {
+    lua_State *L;
+    void *context;
 };
 
 struct zklua_completion_data_s {
     lua_State *L;
     const void *data;
 };
+
+void watcher_dispatch(zhandle_t *zh, int type, int state,
+        const char *path,void *watcherCtx);
 
 void void_completion_dispatch(int rc, const void *data);
 
