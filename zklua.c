@@ -339,7 +339,6 @@ static int zklua_set_log_stream(lua_State *L)
 
 static int zklua_deterministic_conn_order(lua_State *L)
 {
-    zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
 }
 
 static int zklua_create(lua_State *L)
