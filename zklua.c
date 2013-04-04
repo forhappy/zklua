@@ -331,10 +331,36 @@ static int zklua_is_unrecoverable(lua_State *L)
 
 static int zklua_set_debug_level(lua_State *L)
 {
+    int level = luaL_checkint(L, -1);
+    switch(level) {
+        case ZOO_LOG_LEVEL_ERROR:
+            zoo_set_debug_level(ZOO_LOG_LEVEL_ERROR);
+            break;
+        case ZOO_LOG_LEVEL_WARN:
+            zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
+            break;
+        case ZOO_LOG_LEVEL_INFO:
+            zoo_set_debug_level(ZOO_LOG_LEVEL_INFO);
+            break;
+        case ZOO_LOG_LEVEL_DEBUG:
+            zoo_set_debug_level(ZOO_LOG_LEVEL_DEBUG);
+            break;
+        default:
+            return luaL_error(L, "invalid arguments: "
+                    "unsupported log level specified.");
+    }
+    return 0;
 }
 
 static int zklua_set_log_stream(lua_State *L)
 {
+    size_t stream_len = 0;
+    const char *stream = luaL_checklstring(L, -1, &stream_len);
+    zklua_log_stream = fopen(stream, "w+");
+    if (zklua_log_stream == NULL) return luaL_error(L,
+            "unable open the specified file %s", stream);
+    zoo_set_log_stream(zklua_log_stream);
+    return 0;
 }
 
 static int zklua_deterministic_conn_order(lua_State *L)
