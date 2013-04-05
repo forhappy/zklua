@@ -73,6 +73,16 @@ static int _zklua_check_host(const char *host)
     return 1;
 }
 
+static int _zklua_check_handle(lua_State *L, zklua_handle_t *handle)
+{
+    if (handle->zh) {
+        return 1;
+    } else {
+        luaL_error(L, "invalid zookeeper handle.");
+        return 0;
+    }
+}
+
 static zklua_watcher_context_t *_zklua_watcher_context_init(
         lua_State *L, void *data)
 {
@@ -80,7 +90,7 @@ static zklua_watcher_context_t *_zklua_watcher_context_init(
         sizeof(zklua_watcher_context_t));
     if (wrapper == NULL) {
         luaL_error(L, "out of memory when zklua trys to "
-                "alloc an internal object");
+                "alloc an internal object.");
     }
     wrapper->L = L;
     wrapper->context = data;
@@ -96,7 +106,7 @@ static clientid_t *_zklua_clientid_init(
     clientid = (clientid_t *)malloc(sizeof(clientid_t));
     if (clientid == NULL) {
         luaL_error(L, "out of memory when zklua trys to "
-                "alloc an internal object");
+                "alloc an internal object.");
     }
 
     luaL_checktype(L, index, LUA_TTABLE);
@@ -202,6 +212,19 @@ static int zklua_close(lua_State *L)
 static int zklua_client_id(lua_State *L)
 {
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        const clientid_t *clientid = zoo_client_id(handle->zh);
+        lua_newtable(L);
+        lua_pushstring(L, "client_id");
+        lua_pushnumber(L, clientid->client_id);
+        lua_settable(L, -3);
+        lua_pushstring(L, "passwd");
+        lua_pushstring(L, clientid->passwd);
+        lua_settable(L, -3);
+        return 1;
+    } else {
+        return luaL_error(L, "unable to get client id.");
+    }
 }
 
 static int zklua_recv_timeout(lua_State *L)
@@ -374,7 +397,7 @@ static int zklua_set_log_stream(lua_State *L)
     const char *stream = luaL_checklstring(L, -1, &stream_len);
     zklua_log_stream = fopen(stream, "w+");
     if (zklua_log_stream == NULL) return luaL_error(L,
-            "unable open the specified file %s", stream);
+            "unable open the specified file %s.", stream);
     zoo_set_log_stream(zklua_log_stream);
     return 0;
 }
@@ -389,7 +412,7 @@ static int zklua_deterministic_conn_order(lua_State *L)
         zoo_deterministic_conn_order(0);
     } else {
         return luaL_error(L, "invalid argument: please choose "
-                "(yes, no) or (true, false)");
+                "(yes, no) or (true, false).");
     }
     return 0;
 }
