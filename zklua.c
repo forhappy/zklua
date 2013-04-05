@@ -20,13 +20,17 @@
 
 static FILE *zklua_log_stream = NULL;
 
+/** unique static address used for indexing in LUA_REGISTRYINDEX. */
+static char watcher_fn_key = 'k';
+
 void watcher_dispatch(zhandle_t *zh, int type, int state,
         const char *path, void *watcherCtx)
 {
     zklua_watcher_context_t *wrapper = (zklua_watcher_context_t *)watcherCtx;
     lua_State *L = wrapper->L;
     void *context = wrapper->context;
-    lua_pushvalue(L, 2);
+    lua_pushlightuserdata(L, (void *)&watcher_fn_key);
+    lua_gettable(L, LUA_REGISTRYINDEX);
     lua_pushinteger(L, type);
     lua_pushinteger(L, state);
     lua_pushstring(L, path);
@@ -95,6 +99,17 @@ static zklua_watcher_context_t *_zklua_watcher_context_init(
     wrapper->L = L;
     wrapper->context = data;
     return wrapper;
+}
+
+/**
+ * save watcher_fn into LUA_REGISTRYINDEX, and @index@ is the index in lua_State
+ * where the lua watcher_fn resides.
+ **/
+static void _zklua_save_watcherfn(lua_State *L, int index)
+{
+    lua_pushlightuserdata(L, (void *)&watcher_fn_key);
+    lua_pushvalue(L, index);
+    lua_settable(L, LUA_REGISTRYINDEX);
 }
 
 static clientid_t *_zklua_clientid_init(
@@ -229,17 +244,44 @@ static int zklua_client_id(lua_State *L)
 
 static int zklua_recv_timeout(lua_State *L)
 {
+    int recv_timeout = 0;
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        recv_timeout = zoo_recv_timeout(handle->zh);
+        lua_pushinteger(L, recv_timeout);
+        return 1;
+    } else {
+        return luaL_error(L, "unable to get recv_timeout.");
+    }
+
 }
 
 static int zklua_get_context(lua_State *L)
 {
+    const char *context = NULL;
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        context = zoo_get_context(handle->zh);
+        lua_pushstring(L, context);
+        return 1;
+    } else {
+        return luaL_error(L, "unable to get zookeeper handle context.");
+    }
 }
 
 static int zklua_set_context(lua_State *L)
 {
+
+    size_t context_len = 0;
+    char *context = NULL;
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        context = (char *)luaL_checklstring(L, -1, &context_len);
+        zoo_set_context(handle->zh, context);
+        return 0;
+    } else {
+        return luaL_error(L, "unable to get zookeeper handle context.");
+    }
 }
 
 static int zklua_set_watcher(lua_State *L)
