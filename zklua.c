@@ -43,30 +43,52 @@ void watcher_dispatch(zhandle_t *zh, int type, int state,
 }
 
 void void_completion_dispatch(int rc, const void *data)
-{}
+{
+    zklua_completion_data_t *wrapper = (zklua_completion_data_t *)data;
+    lua_State *L = wrapper->L;
+    int fnpos = wrapper->fnpos;
+    const char *real_data = wrapper->data;
+    lua_pushinteger(L, rc);
+    lua_pushstring(L, real_data);
+    // printf("void_completion_dispatch: %s\n", lua_typename(L, lua_type(L, 1)));
+    lua_call(L, 2, 0);
+    free(wrapper);
+}
 
 void stat_completion_dispatch(int rc, const struct Stat *stat,
         const void *data)
-{}
+{
+
+}
 
 void data_completion_dispatch(int rc, const char *value, int value_len,
         const struct Stat *stat, const void *data)
-{}
+{
+
+}
 
 void strings_completion_dispatch(int rc, const struct String_vector *strings,
         const void *data)
-{}
+{
 
-void strings_stat_completion_t(int rc, const struct String_vector *strings,
+}
+
+void strings_stat_completion_dispatch(int rc, const struct String_vector *strings,
         const struct Stat *stat, const void *data)
-{}
+{
 
-void string_completion_t(int rc, const char *value, const void *data)
-{}
+}
 
-void acl_completion_t(int rc, struct ACL_vector *acl,
+void string_completion_dispatch(int rc, const char *value, const void *data)
+{
+
+}
+
+void acl_completion_dispatch(int rc, struct ACL_vector *acl,
         struct Stat *stat, const void *data)
-{}
+{
+
+}
 
 /**
  * return 1 if @host@ has the following format:
@@ -75,6 +97,30 @@ void acl_completion_t(int rc, struct ACL_vector *acl,
 static int _zklua_check_host(const char *host)
 {
     return 1;
+}
+
+static int _zklua_build_stat(lua_State *L, const struct Stat *stat)
+{
+    // TODO: implement Stat building here, _zklua_build_stat
+    // can be useful in completion and/or exists, set APIs.
+}
+
+static int _zklua_build_string_vector(lua_State *L, const struct String_vector *sv)
+{
+    // TODO: implement String_vector building here, _zklua_build_string_vector
+    // can be useful in completion and/or exists, set APIs.
+}
+
+static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls)
+{
+    // TODO: implement ACL_vector building here, _zklua_build_acls
+    // can be useful in completion and get acls APIs.
+}
+
+static int _zklua_parse_acls(lua_State *L, int index, struct ACL_vector *acls)
+{
+    luaL_checktype(L, index, LUA_TTABLE);
+    // TODO: implement ACL_vector parsing here.
 }
 
 static int _zklua_check_handle(lua_State *L, zklua_handle_t *handle)
@@ -163,12 +209,13 @@ static int zklua_init(lua_State *L)
     lua_setmetatable(L, -2);
 
     host = luaL_checklstring(L, 1, &host_len);
-    if (_zklua_check_host(host)) {
+    if (!_zklua_check_host(host)) {
         return luaL_error(L, "invalid arguments:"
                 "host must be a string with format:\n"
                 "127.0.0.1:2081,127.0.0.1:2082");
     }
     luaL_checktype(L, 2, LUA_TFUNCTION);
+    _zklua_save_watcherfn(L, 2);
     recv_timeout = luaL_checkint(L, 3);
     switch(top) {
         case 3:
@@ -287,6 +334,15 @@ static int zklua_set_context(lua_State *L)
 static int zklua_set_watcher(lua_State *L)
 {
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        lua_pushlightuserdata(L, (void *)&watcher_fn_key);
+        lua_gettable(L, LUA_REGISTRYINDEX);
+        luaL_checktype(L, 2, LUA_TFUNCTION);
+        _zklua_save_watcherfn(L, 2);
+        return 1;
+    } else {
+        return luaL_error(L, "unable to set zookeeper new watcher_fn.");
+    }
 }
 
 static int zklua_get_connected_host(lua_State *L)
@@ -316,11 +372,43 @@ static int zklua_state(lua_State *L)
 static int zklua_acreate(lua_State *L)
 {
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        // TODO: implementation here.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_adelete(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *path = NULL;
+    int version = -1;
+    int fnpos = 0;
+    const char *data = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        version = luaL_checkint(L, 3);
+        fnpos = 4;
+        luaL_checktype(L, 4, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 5);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->fnpos = fnpos;
+        cdata->data= data;
+        lua_pushvalue(L, 4);
+        lua_xmove(L, cdata->L, 1);
+//        printf("zklua_adelete: %s\n", lua_typename(L, lua_type(L, 1)));
+        ret = zoo_adelete(handle->zh, path, version, void_completion_dispatch, cdata);
+        lua_pushnumber(L, ret);
+        return 1;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_aexists(lua_State *L)

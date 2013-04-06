@@ -40,6 +40,7 @@ struct zklua_watcher_context_s {
 
 struct zklua_completion_data_s {
     lua_State *L;
+    int fnpos; /** completion callback position in a real call.*/
     const void *data;
 };
 
@@ -57,11 +58,11 @@ void data_completion_dispatch(int rc, const char *value, int value_len,
 void strings_completion_dispatch(int rc, const struct String_vector *strings,
         const void *data);
 
-void strings_stat_completion_t(int rc, const struct String_vector *strings,
+void strings_stat_completion_dispatch(int rc, const struct String_vector *strings,
         const struct Stat *stat, const void *data);
 
-void string_completion_t(int rc, const char *value, const void *data);
+void string_completion_dispatch(int rc, const char *value, const void *data);
 
-void acl_completion_t(int rc, struct ACL_vector *acl,
+void acl_completion_dispatch(int rc, struct ACL_vector *acl,
         struct Stat *stat, const void *data);
 
