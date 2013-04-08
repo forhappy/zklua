@@ -23,6 +23,12 @@ static FILE *zklua_log_stream = NULL;
 /** unique static address used for indexing in LUA_REGISTRYINDEX. */
 static char watcher_fn_key = 'k';
 
+static int _zklua_build_stat(lua_State *L, const struct Stat *stat);
+
+static int _zklua_build_string_vector(lua_State *L, const struct String_vector *sv);
+
+static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls);
+
 void watcher_dispatch(zhandle_t *zh, int type, int state,
         const char *path, void *watcherCtx)
 {
@@ -46,11 +52,9 @@ void void_completion_dispatch(int rc, const void *data)
 {
     zklua_completion_data_t *wrapper = (zklua_completion_data_t *)data;
     lua_State *L = wrapper->L;
-    int fnpos = wrapper->fnpos;
     const char *real_data = wrapper->data;
     lua_pushinteger(L, rc);
     lua_pushstring(L, real_data);
-    // printf("void_completion_dispatch: %s\n", lua_typename(L, lua_type(L, 1)));
     lua_call(L, 2, 0);
     free(wrapper);
 }
@@ -58,36 +62,82 @@ void void_completion_dispatch(int rc, const void *data)
 void stat_completion_dispatch(int rc, const struct Stat *stat,
         const void *data)
 {
-
+    zklua_completion_data_t *wrapper = (zklua_completion_data_t *)data;
+    lua_State *L = wrapper->L;
+    const char *real_data = wrapper->data;
+    lua_pushinteger(L, rc);
+    _zklua_build_stat(L, stat);
+    lua_pushstring(L, real_data);
+    lua_call(L, 3, 0);
+    free(wrapper);
 }
 
 void data_completion_dispatch(int rc, const char *value, int value_len,
         const struct Stat *stat, const void *data)
 {
-
+    zklua_completion_data_t *wrapper = (zklua_completion_data_t *)data;
+    lua_State *L = wrapper->L;
+    const char *real_data = wrapper->data;
+    lua_pushinteger(L, rc);
+    lua_pushstring(L, value);
+    _zklua_build_stat(L, stat);
+    lua_pushstring(L, real_data);
+    lua_call(L, 4, 0);
+    free(wrapper);
 }
 
 void strings_completion_dispatch(int rc, const struct String_vector *strings,
         const void *data)
 {
-
+    zklua_completion_data_t *wrapper = (zklua_completion_data_t *)data;
+    lua_State *L = wrapper->L;
+    const char *real_data = wrapper->data;
+    lua_pushinteger(L, rc);
+    _zklua_build_string_vector(L, strings);
+    lua_pushstring(L, real_data);
+    lua_call(L, 3, 0);
+    free(wrapper);
 }
 
 void strings_stat_completion_dispatch(int rc, const struct String_vector *strings,
         const struct Stat *stat, const void *data)
 {
+    zklua_completion_data_t *wrapper = (zklua_completion_data_t *)data;
+    lua_State *L = wrapper->L;
+    const char *real_data = wrapper->data;
+    lua_pushinteger(L, rc);
+    _zklua_build_string_vector(L, strings);
+    _zklua_build_stat(L, stat);
+    lua_pushstring(L, real_data);
+    lua_call(L, 4, 0);
+    free(wrapper);
 
 }
 
 void string_completion_dispatch(int rc, const char *value, const void *data)
 {
-
+    zklua_completion_data_t *wrapper = (zklua_completion_data_t *)data;
+    lua_State *L = wrapper->L;
+    const char *real_data = wrapper->data;
+    lua_pushinteger(L, rc);
+    lua_pushstring(L, value);
+    lua_pushstring(L, real_data);
+    lua_call(L, 3, 0);
+    free(wrapper);
 }
 
 void acl_completion_dispatch(int rc, struct ACL_vector *acl,
         struct Stat *stat, const void *data)
 {
-
+    zklua_completion_data_t *wrapper = (zklua_completion_data_t *)data;
+    lua_State *L = wrapper->L;
+    const char *real_data = wrapper->data;
+    lua_pushinteger(L, rc);
+    _zklua_build_acls(L, acl);
+    _zklua_build_stat(L, stat);
+    lua_pushstring(L, real_data);
+    lua_call(L, 3, 0);
+    free(wrapper);
 }
 
 /**
@@ -384,7 +434,6 @@ static int zklua_adelete(lua_State *L)
     size_t path_len = 0;
     const char *path = NULL;
     int version = -1;
-    int fnpos = 0;
     const char *data = NULL;
     zklua_completion_data_t *cdata = NULL;
     int ret = -1;
@@ -393,17 +442,16 @@ static int zklua_adelete(lua_State *L)
     if (_zklua_check_handle(L, handle)) {
         path = luaL_checklstring(L, 2, &path_len);
         version = luaL_checkint(L, 3);
-        fnpos = 4;
         luaL_checktype(L, 4, LUA_TFUNCTION);
         data = luaL_checkstring(L, 5);
         cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
         cdata->L = lua_newthread(L);
-        cdata->fnpos = fnpos;
         cdata->data= data;
         lua_pushvalue(L, 4);
         lua_xmove(L, cdata->L, 1);
-//        printf("zklua_adelete: %s\n", lua_typename(L, lua_type(L, 1)));
         ret = zoo_adelete(handle->zh, path, version, void_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+        printf("zklua_adelete: %s\n", lua_typename(L, lua_type(L, 1)));
         lua_pushnumber(L, ret);
         return 1;
     } else {

@@ -40,7 +40,6 @@ struct zklua_watcher_context_s {
 
 struct zklua_completion_data_s {
     lua_State *L;
-    int fnpos; /** completion callback position in a real call.*/
     const void *data;
 };
 
