@@ -575,7 +575,7 @@ static int zklua_set_log_stream(lua_State *L)
     const char *stream = luaL_checklstring(L, -1, &stream_len);
     zklua_log_stream = fopen(stream, "w+");
     if (zklua_log_stream == NULL) return luaL_error(L,
-            "unable open the specified file %s.", stream);
+            "unable to open the specified file %s.", stream);
     zoo_set_log_stream(zklua_log_stream);
     return 0;
 }
