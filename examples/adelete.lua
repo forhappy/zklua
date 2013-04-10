@@ -1,6 +1,6 @@
 require "zklua"
 
-function zklua_my_watcher(type, state, path)
+function zklua_my_watcher(zh, type, state, path, watcherctx)
     if type == zklua.ZOO_SESSION_EVENT then
         if state == zklua.ZOO_CONNECTED_STATE then
             print("Connected to zookeeper service successfully!\n");
