@@ -582,11 +582,38 @@ static int zklua_aexists(lua_State *L)
     }
 }
 
+/**
+ * checks the existence of a node in zookeeper.
+ **/
 static int zklua_awexists(lua_State *L)
 {
-    zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
-}
+    size_t path_len = 0;
+    const char *watcherctx = NULL;
+    const char *path = NULL;
+    int watch = 0;
+    const char *data = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
 
+    zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        watcherctx = luaL_checkstring(L, 4);
+        luaL_checktype(L, 5, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 6);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 5);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_awexists(handle->zh, path, watcher_dispatch,
+                (void *)watcherctx, stat_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
+}
 
 static int zklua_aget(lua_State *L)
 {
