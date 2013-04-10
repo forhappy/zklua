@@ -572,7 +572,7 @@ static int zklua_aexists(lua_State *L)
         cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
         cdata->L = lua_newthread(L);
         cdata->data= data;
-        lua_pushvalue(L, 5);
+        lua_pushvalue(L, 4);
         lua_xmove(L, cdata->L, 1);
         ret = zoo_aexists(handle->zh, path, watch,
                 stat_completion_dispatch, cdata);
@@ -584,6 +584,7 @@ static int zklua_aexists(lua_State *L)
 
 /**
  * checks the existence of a node in zookeeper.
+ * TODO: this implementation is still buggy.
  **/
 static int zklua_awexists(lua_State *L)
 {
@@ -615,9 +616,35 @@ static int zklua_awexists(lua_State *L)
     }
 }
 
+/**
+ * gets the data associated with a node.
+ **/
 static int zklua_aget(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *path = NULL;
+    int watch = 0;
+    const char *data = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        watch = luaL_checkint(L, 3);
+        luaL_checktype(L, 4, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 5);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 4);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_aget(handle->zh, path, watch,
+                data_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_awget(lua_State *L)
@@ -627,17 +654,89 @@ static int zklua_awget(lua_State *L)
 
 static int zklua_aset(lua_State *L)
 {
+    size_t path_len = 0;
+    size_t buffer_len = 0;
+    const char *path = NULL;
+    const char *buffer = NULL;
+    const char *data = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int version = 0;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        buffer = luaL_checklstring(L, 3, &buffer_len);
+        version = luaL_checkint(L, 4);
+        luaL_checktype(L, 5, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 6);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 5);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_aset(handle->zh, path, buffer, buffer_len, version,
+                stat_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_aget_children(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *path = NULL;
+    int watch = 0;
+    const char *data = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        watch = luaL_checkint(L, 3);
+        luaL_checktype(L, 4, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 5);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 4);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_aget_children(handle->zh, path, watch,
+                strings_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_aget_children2(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *path = NULL;
+    int watch = 0;
+    const char *data = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        watch = luaL_checkint(L, 3);
+        luaL_checktype(L, 4, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 5);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 4);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_aget_children2(handle->zh, path, watch,
+                strings_stat_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_awget_children(lua_State *L)
@@ -652,17 +751,86 @@ static int zklua_awget_children2(lua_State *L)
 
 static int zklua_async(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *path = NULL;
+    int watch = 0;
+    const char *data = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 4);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 3);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_async(handle->zh, path,
+                string_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_aget_acl(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *path = NULL;
+    const char *data = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 4);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 3);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_aget_acl(handle->zh, path,
+                acl_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_aset_acl(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *path = NULL;
+    const char *data = NULL;
+    struct ACL_vector acl;
+    zklua_completion_data_t *cdata = NULL;
+    int version = 0;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        version = luaL_checkint(L, 3);
+        if (!_zklua_parse_acls(L, 4, &acl)) return luaL_error(L,
+                "invalid ACL format.");
+        luaL_checktype(L, 5, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 6);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 5);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_aset_acl(handle->zh, path, version, &acl,
+                void_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_error(lua_State *L)
@@ -675,7 +843,30 @@ static int zklua_error(lua_State *L)
 
 static int zklua_add_auth(lua_State *L)
 {
+    size_t cert_len = 0;
+    const char *scheme = NULL;
+    const char *cert = NULL;
+    const char *data = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        scheme = luaL_checkstring(L, 2);
+        cert = luaL_checklstring(L, 3, &cert_len);
+        luaL_checktype(L, 4, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 5);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 4);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_add_auth(handle->zh, scheme, cert, cert_len,
+                void_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_is_unrecoverable(lua_State *L)
