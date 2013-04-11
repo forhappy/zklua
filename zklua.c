@@ -1160,12 +1160,45 @@ static int zklua_wget_children2(lua_State *L)
 
 static int zklua_get_acl(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *path = NULL;
+    struct ACL_vector acl;
+    struct Stat stat;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        ret = zoo_get_acl(handle->zh, path, &acl, &stat);
+        lua_pushinteger(L, ret);
+        _zklua_build_acls(L, &acl);
+        _zklua_build_stat(L, &stat);
+        return 3;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_set_acl(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *path = NULL;
+    int version = 0;
+    struct ACL_vector acl;
+    struct Stat stat;
+    int ret = -1;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        version = luaL_checkint(L, 3);
+        _zklua_parse_acls(L, 4, &acl);
+        ret = zoo_set_acl(handle->zh, path, version, &acl);
+        lua_pushinteger(L, ret);
+        return 1;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static const luaL_Reg zklua[] =
