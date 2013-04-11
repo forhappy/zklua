@@ -165,8 +165,41 @@ static int _zklua_check_host(const char *host)
 
 static int _zklua_build_stat(lua_State *L, const struct Stat *stat)
 {
-    // TODO: implement Stat building here, _zklua_build_stat
-    // can be useful in completion and/or exists, set APIs.
+    lua_newtable(L);
+    lua_pushstring(L, "czxid");
+    lua_pushnumber(L, stat->czxid);
+    lua_settable(L, -3);
+    lua_pushstring(L, "mzxid");
+    lua_pushnumber(L, stat->mzxid);
+    lua_settable(L, -3);
+    lua_pushstring(L, "ctime");
+    lua_pushnumber(L, stat->ctime);
+    lua_settable(L, -3);
+    lua_pushstring(L, "mtime");
+    lua_pushnumber(L, stat->mtime);
+    lua_settable(L, -3);
+    lua_pushstring(L, "version");
+    lua_pushnumber(L, stat->version);
+    lua_settable(L, -3);
+    lua_pushstring(L, "cversion");
+    lua_pushnumber(L, stat->cversion);
+    lua_settable(L, -3);
+    lua_pushstring(L, "aversion");
+    lua_pushnumber(L, stat->aversion);
+    lua_settable(L, -3);
+    lua_pushstring(L, "ephemeralOwner");
+    lua_pushnumber(L, stat->ephemeralOwner);
+    lua_settable(L, -3);
+    lua_pushstring(L, "dataLength");
+    lua_pushnumber(L, stat->dataLength);
+    lua_settable(L, -3);
+    lua_pushstring(L, "numChildren");
+    lua_pushnumber(L, stat->numChildren);
+    lua_settable(L, -3);
+    lua_pushstring(L, "pzxid");
+    lua_pushnumber(L, stat->pzxid);
+    lua_settable(L, -3);
+    return 1;
 }
 
 static int _zklua_build_string_vector(lua_State *L, const struct String_vector *sv)
