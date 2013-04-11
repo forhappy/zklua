@@ -204,14 +204,31 @@ static int _zklua_build_stat(lua_State *L, const struct Stat *stat)
 
 static int _zklua_build_string_vector(lua_State *L, const struct String_vector *sv)
 {
-    // TODO: implement String_vector building here, _zklua_build_string_vector
-    // can be useful in completion and/or exists, set APIs.
+    int i;
+    lua_newtable(L);
+    for (i=0; i < sv->count; ++i) {
+        lua_pushstring(L, sv->data[i]);
+        lua_rawseti(L, -2, i);
+    }
 }
 
 static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls)
 {
-    // TODO: implement ACL_vector building here, _zklua_build_acls
-    // can be useful in completion and get acls APIs.
+    int i;
+    lua_newtable(L);
+    for (i=0; i < acls->count; ++i) {
+        lua_newtable(L);
+        lua_pushstring(L, "perms");
+        lua_pushnumber(L, acls->data[i].perms);
+        lua_settable(L, -3);
+        lua_pushstring(L, "scheme");
+        lua_pushstring(L, acls->data[i].id.scheme);
+        lua_settable(L, -3);
+        lua_pushstring(L, "id");
+        lua_pushstring(L, acls->data[i].id.id);
+        lua_settable(L, -3);
+        lua_rawseti(L, -2, i);
+  }
 }
 
 static int _zklua_parse_acls(lua_State *L, int index, struct ACL_vector *acls)
