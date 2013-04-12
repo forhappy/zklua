@@ -305,10 +305,43 @@ static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls)
     }
 }
 
+/**
+ * parse a ACL_vector struct from the given acceptable index.
+ * return 1 if the parsing is successful, otherwise 0 returned.
+ **/
 static int _zklua_parse_acls(lua_State *L, int index, struct ACL_vector *acls)
 {
+    int count = 0, i = 0, j = 0;
     luaL_checktype(L, index, LUA_TTABLE);
-    // TODO: implement ACL_vector parsing here.
+    count = lua_objlen(L, index);
+    acls->count = count;
+    acls->data = (struct ACL *)calloc(count, sizeof(struct ACL));
+    if (acls->data == NULL) {
+        luaL_error(L, "out of memory when zklua trys to "
+                "alloc an internal object.");
+        return 0;
+    }
+    for (i = 1; i <= count; i++) {
+        lua_rawgeti(L, index, i);
+
+        lua_pushstring(L, "perms");
+        lua_rawget(L, -1);
+        acls->data[i-1].perms = lua_tointeger(L, -1);
+        lua_pop(L, 1);
+
+        lua_pushstring(L, "scheme");
+        lua_rawget(L, -1);
+        acls->data[i-1].id.scheme = strdup(lua_tostring(L, -1));
+        lua_pop(L, 1);
+
+        lua_pushstring(L, "id");
+        lua_rawget(L, -1);
+        acls->data[i-1].id.id = strdup(lua_tostring(L, -1));
+        lua_pop(L, 1);
+
+        lua_pop(L, 1);
+    }
+    return 1;
 }
 
 static int _zklua_check_handle(lua_State *L, zklua_handle_t *handle)
