@@ -16,6 +16,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef WIN32
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
+
 #include "zklua.h"
 
 static FILE *zklua_log_stream = NULL;
@@ -597,7 +602,37 @@ static int zklua_set_watcher(lua_State *L)
  **/
 static int zklua_get_connected_host(lua_State *L)
 {
+    unsigned short port = 0;
+
+    struct sockaddr *paddr = NULL;
+    struct sockaddr saddr;
+    socklen_t socklen = 0;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    if (_zklua_check_handle(L, handle)) {
+        paddr = zookeeper_get_connected_host(handle->zh, &saddr, &socklen);
+        if (paddr != NULL) {
+            if (socklen == sizeof(struct sockaddr_in)) {
+                char addrstr[INET_ADDRSTRLEN] = {0};
+                port = ntohs(((struct sockaddr_in *)paddr)->sin_port);
+                inet_ntop(AF_INET, &(((struct sockaddr_in *)paddr)->sin_addr), addrstr, INET_ADDRSTRLEN);
+                lua_pushstring(L, addrstr);
+                lua_pushinteger(L, port);
+                return 2;
+            } else if (socklen == sizeof(struct sockaddr_in6)) {
+                char addr6str[INET6_ADDRSTRLEN] = {0};
+                port = ntohs(((struct sockaddr_in6 *)paddr)->sin6_port);
+                inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)paddr)->sin6_addr), addr6str, INET6_ADDRSTRLEN);
+                lua_pushstring(L, addr6str);
+                lua_pushinteger(L, port);
+                return 2;
+            } else {
+                return luaL_error(L, "unsupported network sockaddr type.");
+            }
+        }
+    } else {
+        return luaL_error(L, "unable to get connected host.");
+    }
 }
 
 /**
