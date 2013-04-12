@@ -943,12 +943,80 @@ static int zklua_aget_children2(lua_State *L)
 
 static int zklua_awget_children(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *real_local_watcherctx = NULL;
+    const char *path = NULL;
+    int watch = 0;
+    const char *data = NULL;
+    zklua_local_watcher_context_t *wrapper = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
+    int zhref = 0;
+    int cbref = 0;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    zhref = _zklua_ref(L, 1);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        cbref = _zklua_ref(L, 3);
+        real_local_watcherctx = luaL_checkstring(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L,
+                (void *)real_local_watcherctx, zhref, cbref);
+        luaL_checktype(L, 5, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 6);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 5);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_awget_children(handle->zh, path, local_watcher_dispatch,
+                (void *)wrapper, strings_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+        lua_pushinteger(L, ret);
+        return 1;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_awget_children2(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *real_local_watcherctx = NULL;
+    const char *path = NULL;
+    int watch = 0;
+    const char *data = NULL;
+    zklua_local_watcher_context_t *wrapper = NULL;
+    zklua_completion_data_t *cdata = NULL;
+    int ret = -1;
+    int zhref = 0;
+    int cbref = 0;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    zhref = _zklua_ref(L, 1);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        cbref = _zklua_ref(L, 3);
+        real_local_watcherctx = luaL_checkstring(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L,
+                (void *)real_local_watcherctx, zhref, cbref);
+        luaL_checktype(L, 5, LUA_TFUNCTION);
+        data = luaL_checkstring(L, 6);
+        cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
+        cdata->L = lua_newthread(L);
+        cdata->data= data;
+        lua_pushvalue(L, 5);
+        lua_xmove(L, cdata->L, 1);
+        ret = zoo_awget_children2(handle->zh, path, local_watcher_dispatch,
+                (void *)wrapper, strings_stat_completion_dispatch, cdata);
+        lua_pop(L, 1); // popup the thread.
+        lua_pushinteger(L, ret);
+        return 1;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_async(lua_State *L)
@@ -1212,7 +1280,33 @@ static int zklua_exists(lua_State *L)
 
 static int zklua_wexists(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *real_local_watcherctx = NULL;
+    const char *path = NULL;
+    int watch = 0;
+    zklua_local_watcher_context_t *wrapper = NULL;
+    struct Stat stat;
+    int ret = -1;
+    int zhref = 0;
+    int cbref = 0;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    zhref = _zklua_ref(L, 1);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        cbref = _zklua_ref(L, 3);
+        real_local_watcherctx = luaL_checkstring(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L,
+                (void *)real_local_watcherctx, zhref, cbref);
+        ret = zoo_wexists(handle->zh, path, local_watcher_dispatch,
+                (void *)wrapper, &stat);
+        lua_pushinteger(L, ret);
+        _zklua_build_stat(L, &stat);
+        return 2;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_get(lua_State *L)
@@ -1241,7 +1335,35 @@ static int zklua_get(lua_State *L)
 
 static int zklua_wget(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *real_local_watcherctx = NULL;
+    const char *path = NULL;
+    char *buffer = NULL;
+    int buffer_len = 0;
+    zklua_local_watcher_context_t *wrapper = NULL;
+    struct Stat stat;
+    int ret = -1;
+    int zhref = 0;
+    int cbref = 0;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    zhref = _zklua_ref(L, 1);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        cbref = _zklua_ref(L, 3);
+        real_local_watcherctx = luaL_checkstring(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L,
+                (void *)real_local_watcherctx, zhref, cbref);
+        ret = zoo_wget(handle->zh, path, local_watcher_dispatch,
+                (void *)wrapper, buffer, &buffer_len, &stat);
+        lua_pushinteger(L, ret);
+        lua_pushstring(L, buffer);
+        _zklua_build_stat(L, &stat);
+        return 3;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_set(lua_State *L)
@@ -1313,7 +1435,32 @@ static int zklua_get_children(lua_State *L)
 
 static int zklua_wget_children(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *real_local_watcherctx = NULL;
+    const char *path = NULL;
+    zklua_local_watcher_context_t *wrapper = NULL;
+    struct String_vector strings;
+    int ret = -1;
+    int zhref = 0;
+    int cbref = 0;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    zhref = _zklua_ref(L, 1);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        cbref = _zklua_ref(L, 3);
+        real_local_watcherctx = luaL_checkstring(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L,
+                (void *)real_local_watcherctx, zhref, cbref);
+        ret = zoo_wget_children(handle->zh, path, local_watcher_dispatch,
+                (void *)wrapper, &strings);
+        lua_pushinteger(L, ret);
+        _zklua_build_string_vector(L, &strings);
+        return 2;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_get_children2(lua_State *L)
@@ -1335,7 +1482,7 @@ static int zklua_get_children2(lua_State *L)
         lua_pushinteger(L, ret);
         _zklua_build_string_vector(L, &strings);
         _zklua_build_stat(L, &stat);
-        return 2;
+        return 3;
     } else {
         return luaL_error(L, "invalid zookeeper handle.");
     }
@@ -1343,7 +1490,34 @@ static int zklua_get_children2(lua_State *L)
 
 static int zklua_wget_children2(lua_State *L)
 {
+    size_t path_len = 0;
+    const char *real_local_watcherctx = NULL;
+    const char *path = NULL;
+    zklua_local_watcher_context_t *wrapper = NULL;
+    struct String_vector strings;
+    struct Stat stat;
+    int ret = -1;
+    int zhref = 0;
+    int cbref = 0;
+
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    zhref = _zklua_ref(L, 1);
+    if (_zklua_check_handle(L, handle)) {
+        path = luaL_checklstring(L, 2, &path_len);
+        luaL_checktype(L, 3, LUA_TFUNCTION);
+        cbref = _zklua_ref(L, 3);
+        real_local_watcherctx = luaL_checkstring(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L,
+                (void *)real_local_watcherctx, zhref, cbref);
+        ret = zoo_wget_children2(handle->zh, path, local_watcher_dispatch,
+                (void *)wrapper, &strings, &stat);
+        lua_pushinteger(L, ret);
+        _zklua_build_string_vector(L, &strings);
+        _zklua_build_stat(L, &stat);
+        return 3;
+    } else {
+        return luaL_error(L, "invalid zookeeper handle.");
+    }
 }
 
 static int zklua_get_acl(lua_State *L)
