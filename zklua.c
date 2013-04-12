@@ -597,9 +597,6 @@ static int zklua_set_watcher(lua_State *L)
     }
 }
 
-/**
- * TODO: implement zklua_get_connected_host later.
- **/
 static int zklua_get_connected_host(lua_State *L)
 {
     unsigned short port = 0;
