@@ -27,16 +27,24 @@
 #define ZKLUA_MAX_PATH_BUFFER_SIZE 1024
 
 typedef struct zklua_handle_s zklua_handle_t;
-typedef struct zklua_watcher_context_s zklua_watcher_context_t;
+typedef struct zklua_global_watcher_context_s zklua_global_watcher_context_t;
+typedef struct zklua_local_watcher_context_s zklua_local_watcher_context_t;
 typedef struct zklua_completion_data_s zklua_completion_data_t;
 
 struct zklua_handle_s {
     zhandle_t *zh;
 };
 
-struct zklua_watcher_context_s {
+struct zklua_global_watcher_context_s {
     lua_State *L;
     void *context;
+};
+
+struct zklua_local_watcher_context_s {
+    lua_State *L;
+    void *context;
+    int zhref;
+    int cbref;
 };
 
 struct zklua_completion_data_s {

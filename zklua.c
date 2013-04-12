@@ -38,10 +38,12 @@ static int _zklua_build_string_vector(lua_State *L, const struct String_vector *
 
 static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls);
 
+static int _zklua_unref(lua_State *L, int ref);
+
 void watcher_dispatch(zhandle_t *zh, int type, int state,
         const char *path, void *watcherctx)
 {
-    zklua_watcher_context_t *wrapper = (zklua_watcher_context_t *)watcherctx;
+    zklua_global_watcher_context_t *wrapper = (zklua_global_watcher_context_t *)watcherctx;
     lua_State *L = wrapper->L;
     void *context = wrapper->context;
 
@@ -60,6 +62,32 @@ void watcher_dispatch(zhandle_t *zh, int type, int state,
     /** push watcher context onto the stack. */
     lua_pushstring(L, context);
     lua_call(L, 5, 0);
+}
+
+void local_watcher_dispatch(zhandle_t *zh, int type, int state,
+        const char *path, void *watcherctx)
+{
+    zklua_local_watcher_context_t *wrapper = (zklua_local_watcher_context_t *)watcherctx;
+    lua_State *L = wrapper->L;
+    void *context = wrapper->context;
+    int zhref = wrapper->zhref;
+    int cbref = wrapper->cbref;
+
+    /** push lua watcher_fn onto the stack. */
+    lua_rawgeti(L, LUA_REGISTRYINDEX, cbref);
+    /* push zklua_handle_t onto the stack. */
+    lua_rawgeti(L, LUA_REGISTRYINDEX, zhref);
+    /** push type onto the stack. */
+    lua_pushinteger(L, type);
+    /** push state onto the stack. */
+    lua_pushinteger(L, state);
+    /** push path onto the stack. */
+    lua_pushstring(L, path);
+    /** push watcher context onto the stack. */
+    lua_pushstring(L, context);
+    lua_call(L, 5, 0);
+    _zklua_unref(L, zhref);
+    _zklua_unref(L, cbref);
 }
 
 void void_completion_dispatch(int rc, const void *data)
@@ -165,40 +193,77 @@ static int _zklua_check_host(const char *host)
 
 static int _zklua_build_stat(lua_State *L, const struct Stat *stat)
 {
-    lua_newtable(L);
-    lua_pushstring(L, "czxid");
-    lua_pushnumber(L, stat->czxid);
-    lua_settable(L, -3);
-    lua_pushstring(L, "mzxid");
-    lua_pushnumber(L, stat->mzxid);
-    lua_settable(L, -3);
-    lua_pushstring(L, "ctime");
-    lua_pushnumber(L, stat->ctime);
-    lua_settable(L, -3);
-    lua_pushstring(L, "mtime");
-    lua_pushnumber(L, stat->mtime);
-    lua_settable(L, -3);
-    lua_pushstring(L, "version");
-    lua_pushnumber(L, stat->version);
-    lua_settable(L, -3);
-    lua_pushstring(L, "cversion");
-    lua_pushnumber(L, stat->cversion);
-    lua_settable(L, -3);
-    lua_pushstring(L, "aversion");
-    lua_pushnumber(L, stat->aversion);
-    lua_settable(L, -3);
-    lua_pushstring(L, "ephemeralOwner");
-    lua_pushnumber(L, stat->ephemeralOwner);
-    lua_settable(L, -3);
-    lua_pushstring(L, "dataLength");
-    lua_pushnumber(L, stat->dataLength);
-    lua_settable(L, -3);
-    lua_pushstring(L, "numChildren");
-    lua_pushnumber(L, stat->numChildren);
-    lua_settable(L, -3);
-    lua_pushstring(L, "pzxid");
-    lua_pushnumber(L, stat->pzxid);
-    lua_settable(L, -3);
+    if (stat != NULL) {
+        lua_newtable(L);
+        lua_pushstring(L, "czxid");
+        lua_pushnumber(L, stat->czxid);
+        lua_settable(L, -3);
+        lua_pushstring(L, "mzxid");
+        lua_pushnumber(L, stat->mzxid);
+        lua_settable(L, -3);
+        lua_pushstring(L, "ctime");
+        lua_pushnumber(L, stat->ctime);
+        lua_settable(L, -3);
+        lua_pushstring(L, "mtime");
+        lua_pushnumber(L, stat->mtime);
+        lua_settable(L, -3);
+        lua_pushstring(L, "version");
+        lua_pushnumber(L, stat->version);
+        lua_settable(L, -3);
+        lua_pushstring(L, "cversion");
+        lua_pushnumber(L, stat->cversion);
+        lua_settable(L, -3);
+        lua_pushstring(L, "aversion");
+        lua_pushnumber(L, stat->aversion);
+        lua_settable(L, -3);
+        lua_pushstring(L, "ephemeralOwner");
+        lua_pushnumber(L, stat->ephemeralOwner);
+        lua_settable(L, -3);
+        lua_pushstring(L, "dataLength");
+        lua_pushnumber(L, stat->dataLength);
+        lua_settable(L, -3);
+        lua_pushstring(L, "numChildren");
+        lua_pushnumber(L, stat->numChildren);
+        lua_settable(L, -3);
+        lua_pushstring(L, "pzxid");
+        lua_pushnumber(L, stat->pzxid);
+        lua_settable(L, -3);
+    } else {
+        lua_newtable(L);
+        lua_pushstring(L, "czxid");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "mzxid");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "ctime");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "mtime");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "version");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "cversion");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "aversion");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "ephemeralOwner");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "dataLength");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "numChildren");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+        lua_pushstring(L, "pzxid");
+        lua_pushnumber(L, 0);
+        lua_settable(L, -3);
+    }
     return 1;
 }
 
@@ -206,9 +271,11 @@ static int _zklua_build_string_vector(lua_State *L, const struct String_vector *
 {
     int i;
     lua_newtable(L);
-    for (i=0; i < sv->count; ++i) {
-        lua_pushstring(L, sv->data[i]);
-        lua_rawseti(L, -2, i);
+    if (sv != NULL) {
+        for (i = 0; i < sv->count; ++i) {
+            lua_pushstring(L, sv->data[i]);
+            lua_rawseti(L, -2, i);
+        }
     }
 }
 
@@ -216,19 +283,21 @@ static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls)
 {
     int i;
     lua_newtable(L);
-    for (i=0; i < acls->count; ++i) {
-        lua_newtable(L);
-        lua_pushstring(L, "perms");
-        lua_pushnumber(L, acls->data[i].perms);
-        lua_settable(L, -3);
-        lua_pushstring(L, "scheme");
-        lua_pushstring(L, acls->data[i].id.scheme);
-        lua_settable(L, -3);
-        lua_pushstring(L, "id");
-        lua_pushstring(L, acls->data[i].id.id);
-        lua_settable(L, -3);
-        lua_rawseti(L, -2, i);
-  }
+    if (acls != NULL) {
+        for (i = 0; i < acls->count; ++i) {
+            lua_newtable(L);
+            lua_pushstring(L, "perms");
+            lua_pushnumber(L, acls->data[i].perms);
+            lua_settable(L, -3);
+            lua_pushstring(L, "scheme");
+            lua_pushstring(L, acls->data[i].id.scheme);
+            lua_settable(L, -3);
+            lua_pushstring(L, "id");
+            lua_pushstring(L, acls->data[i].id.id);
+            lua_settable(L, -3);
+            lua_rawseti(L, -2, i);
+        }
+    }
 }
 
 static int _zklua_parse_acls(lua_State *L, int index, struct ACL_vector *acls)
@@ -247,17 +316,46 @@ static int _zklua_check_handle(lua_State *L, zklua_handle_t *handle)
     }
 }
 
-static zklua_watcher_context_t *_zklua_watcher_context_init(
+static int _zklua_ref(lua_State *L, int index)
+{
+    lua_pushvalue(L, index);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    return ref;
+}
+
+static int _zklua_unref(lua_State *L, int ref)
+{
+    luaL_unref(L, LUA_REGISTRYINDEX, ref);
+    return 0;
+}
+
+static zklua_global_watcher_context_t *_zklua_global_watcher_context_init(
         lua_State *L, void *data)
 {
-    zklua_watcher_context_t *wrapper = (zklua_watcher_context_t *)malloc(
-        sizeof(zklua_watcher_context_t));
+    zklua_global_watcher_context_t *wrapper = (zklua_global_watcher_context_t *)malloc(
+        sizeof(zklua_global_watcher_context_t));
     if (wrapper == NULL) {
         luaL_error(L, "out of memory when zklua trys to "
                 "alloc an internal object.");
     }
     wrapper->L = L;
     wrapper->context = data;
+    return wrapper;
+}
+
+static zklua_local_watcher_context_t *_zklua_local_watcher_context_init(
+        lua_State *L, void *data, int zhref, int cbref)
+{
+    zklua_local_watcher_context_t *wrapper = (zklua_local_watcher_context_t *)malloc(
+        sizeof(zklua_local_watcher_context_t));
+    if (wrapper == NULL) {
+        luaL_error(L, "out of memory when zklua trys to "
+                "alloc an internal object.");
+    }
+    wrapper->L = L;
+    wrapper->context = data;
+    wrapper->zhref = zhref;
+    wrapper->cbref = cbref;
     return wrapper;
 }
 
@@ -342,7 +440,7 @@ static int zklua_init(lua_State *L)
     size_t real_context_len = 0;
     char *real_watcher_context = NULL;
     int flags = 0;
-    zklua_watcher_context_t *wrapper = NULL;
+    zklua_global_watcher_context_t *wrapper = NULL;
 
     zklua_handle_t *handle = (zklua_handle_t *)lua_newuserdata(L,
             sizeof(zklua_handle_t));
@@ -361,14 +459,14 @@ static int zklua_init(lua_State *L)
     recv_timeout = luaL_checkint(L, 3);
     switch(top) {
         case 3:
-            wrapper = _zklua_watcher_context_init(L, NULL);
+            wrapper = _zklua_global_watcher_context_init(L, NULL);
             handle->zh = zookeeper_init(host, watcher_dispatch,
                     recv_timeout, 0, wrapper, 0);
             break;
         case 4:
             luaL_checktype(L, 4, LUA_TTABLE);
             clientid = _zklua_clientid_init(L, 4);
-            wrapper = _zklua_watcher_context_init(L, NULL);
+            wrapper = _zklua_global_watcher_context_init(L, NULL);
             handle->zh = zookeeper_init(host, watcher_dispatch,
                     recv_timeout, clientid, wrapper, 0);
             _zklua_clientid_fini(&clientid);
@@ -377,7 +475,7 @@ static int zklua_init(lua_State *L)
             luaL_checktype(L, 4, LUA_TTABLE);
             clientid = _zklua_clientid_init(L, 4);
             real_watcher_context = (char *)luaL_checklstring(L, 5, &real_context_len);
-            wrapper = _zklua_watcher_context_init(L, real_watcher_context);
+            wrapper = _zklua_global_watcher_context_init(L, real_watcher_context);
             handle->zh = zookeeper_init(host, watcher_dispatch,
                     recv_timeout, clientid, wrapper, 0);
             _zklua_clientid_fini(&clientid);
@@ -386,7 +484,7 @@ static int zklua_init(lua_State *L)
             luaL_checktype(L, 4, LUA_TTABLE);
             clientid = _zklua_clientid_init(L, 4);
             real_watcher_context = (char *)luaL_checklstring(L, 5, &real_context_len);
-            wrapper = _zklua_watcher_context_init(L, real_watcher_context);
+            wrapper = _zklua_global_watcher_context_init(L, real_watcher_context);
             flags = luaL_checkint(L, 6);
             handle->zh = zookeeper_init(host, watcher_dispatch,
                     recv_timeout, clientid, wrapper, flags);
@@ -638,23 +736,29 @@ static int zklua_aexists(lua_State *L)
 
 /**
  * checks the existence of a node in zookeeper.
- * TODO: this implementation is still buggy.
  **/
 static int zklua_awexists(lua_State *L)
 {
     size_t path_len = 0;
-    const char *watcherctx = NULL;
+    const char *real_local_watcherctx = NULL;
     const char *path = NULL;
     int watch = 0;
     const char *data = NULL;
+    zklua_local_watcher_context_t *wrapper = NULL;
     zklua_completion_data_t *cdata = NULL;
     int ret = -1;
+    int zhref = 0;
+    int cbref = 0;
 
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    zhref = _zklua_ref(L, 1);
     if (_zklua_check_handle(L, handle)) {
         path = luaL_checklstring(L, 2, &path_len);
         luaL_checktype(L, 3, LUA_TFUNCTION);
-        watcherctx = luaL_checkstring(L, 4);
+        cbref = _zklua_ref(L, 3);
+        real_local_watcherctx = luaL_checkstring(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L,
+                (void *)real_local_watcherctx, zhref, cbref);
         luaL_checktype(L, 5, LUA_TFUNCTION);
         data = luaL_checkstring(L, 6);
         cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
@@ -662,8 +766,8 @@ static int zklua_awexists(lua_State *L)
         cdata->data= data;
         lua_pushvalue(L, 5);
         lua_xmove(L, cdata->L, 1);
-        ret = zoo_awexists(handle->zh, path, watcher_dispatch,
-                (void *)watcherctx, stat_completion_dispatch, cdata);
+        ret = zoo_awexists(handle->zh, path, local_watcher_dispatch,
+                (void *)wrapper, stat_completion_dispatch, cdata);
         lua_pop(L, 1); // popup the thread.
         lua_pushinteger(L, ret);
         return 1;
