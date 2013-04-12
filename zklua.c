@@ -306,7 +306,7 @@ static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls)
 }
 
 /**
- * parse a ACL_vector struct from the given acceptable index.
+ * parse an ACL_vector struct from the given acceptable index.
  * return 1 if the parsing is successful, otherwise 0 returned.
  **/
 static int _zklua_parse_acls(lua_State *L, int index, struct ACL_vector *acls)
@@ -341,6 +341,23 @@ static int _zklua_parse_acls(lua_State *L, int index, struct ACL_vector *acls)
 
         lua_pop(L, 1);
     }
+    return 1;
+}
+
+/**
+ * frees an ACL_vector struct.
+ **/
+static int _zklua_free_acls(struct ACL_vector *acls)
+{
+    int i;
+    if (acls == NULL) {
+        return -1;
+    }
+    for (i = 0; i < acls->count; ++i) {
+        free(acls->data[i].id.id);
+        free(acls->data[i].id.scheme);
+    }
+    free(acls->data);
     return 1;
 }
 
@@ -727,6 +744,7 @@ static int zklua_acreate(lua_State *L)
                 string_completion_dispatch, cdata);
         lua_pop(L, 1); // popup the thread.
         lua_pushinteger(L, ret);
+        _zklua_free_acls(&acl);
         return 1;
     } else {
         return luaL_error(L, "invalid zookeeper handle.");
@@ -1168,6 +1186,7 @@ static int zklua_aset_acl(lua_State *L)
                 void_completion_dispatch, cdata);
         lua_pop(L, 1); // popup the thread.
         lua_pushinteger(L, ret);
+        _zklua_free_acls(&acl);
         return 1;
     } else {
         return luaL_error(L, "invalid zookeeper handle.");
@@ -1297,6 +1316,7 @@ static int zklua_create(lua_State *L)
                 path_buffer, ZKLUA_MAX_PATH_BUFFER_SIZE);
         lua_pushinteger(L, ret);
         lua_pushstring(L, path_buffer);
+        _zklua_free_acls(&acl);
         return 2;
     } else {
         return luaL_error(L, "invalid zookeeper handle.");
@@ -1622,6 +1642,7 @@ static int zklua_set_acl(lua_State *L)
         _zklua_parse_acls(L, 4, &acl);
         ret = zoo_set_acl(handle->zh, path, version, &acl);
         lua_pushinteger(L, ret);
+        _zklua_free_acls(&acl);
         return 1;
     } else {
         return luaL_error(L, "invalid zookeeper handle.");
