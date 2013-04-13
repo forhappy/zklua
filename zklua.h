@@ -25,7 +25,10 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
-#include <zookeeper/zookeeper.h>
+/**
+ * #include <zookeeper/zookeeper.h>
+ **/
+#include "zookeeper.h"
 
 #define ZKLUA_METATABLE_NAME "ZKLUA_HANDLE"
 #define ZKLUA_MAX_PATH_BUFFER_SIZE 1024
