@@ -1,14 +1,14 @@
 all: zklua.so
 
 # NOTE: you should modify the $(ZOOKEEPER_C_API_DIR) variable to
-# the name of your zookeeper c api diretory that are copied from
+# the name of your zookeeper c api directory that are copied from
 # apache zookeeper manually(This can help you to avoid installing
-# the exstra zookeeper c libraries into your system if you do not
+# the extra zookeeper c libraries into your system if you do not
 # want them to be installed), and usually the zookeeper c api resides
-# in the following diretory: `zookeeper-X.Y.Z/src/c`, where X.Y.Z is
+# in the following directory: `zookeeper-X.Y.Z/src/c`, where X.Y.Z is
 # the zookeeper version. You may change the name `zookeeper-X.Y.Z/src/c`
 # to `zookeeper-c-api-X.Y.Z` according to your zookeeper version when
-# copying that diretory to the current zklua diretory.
+# copying that directory to the current zklua diretory.
 ZOOKEEPER_C_API_DIR = ./zookeeper-c-api-3.4.5
 ZOOKEEPER_INCLUDE_DIR = $(ZOOKEEPER_C_API_DIR)/include/
 ZOOKEEPER_MT_AR_LIB = $(ZOOKEEPER_C_API_DIR)/.libs/libzookeeper_mt.a
