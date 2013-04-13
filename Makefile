@@ -26,6 +26,7 @@ $(ZOOKEEPER_MT_AR_LIB): $(ZOOKEEPER_C_API_DIR)/Makefile
 
 $(ZOOKEEPER_C_API_DIR)/Makefile:
 	cd $(ZOOKEEPER_C_API_DIR) && ./configure
+	cd $(ZOOKEEPER_C_API_DIR) && cp ./generated/zookeeper.jute.h ./include/zookeeper.jute.h
 
 SRCS := zklua.c
 
@@ -36,7 +37,7 @@ LIBS = $(ZOOKEEPER_MT_AR_LIB)
 $(OBJS):
 	$(CC) -c $(CFLAGS) $(SRCS)
 
-zklua.so: $(OBJS) $(LIBS)
+zklua.so: $(LIBS) $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 
@@ -48,6 +49,7 @@ clean:
 distclean:clean
 	$(MAKE) -C $(ZOOKEEPER_C_API_DIR) clean
 	$(MAKE) -C $(ZOOKEEPER_C_API_DIR) distclean
+	cd $(ZOOKEEPER_C_API_DIR) && rm ./include/zookeeper.jute.h
 
 install: zklua.so
 	install -D -s zklua.so $(INSTALL_PATH)/zklua.so
