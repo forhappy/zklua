@@ -17,7 +17,7 @@ Zklua has no other dependencies except for zookeeper c API implementation, which
 # Install zklua #
 In order to help zklua to find zookeeper c library, you should copy the zookeeper c API source code manually from zookeeper source code directory, and you may have to modify the $(ZOOKEEPER_C_API_DIR) variable to the name of your zookeeper c api directory(This can help you to avoid installing the extra zookeeper c libraries into your system if you do not want them to be installed), and usually the zookeeper c API resides in the following directory: `zookeeper-X.Y.Z/src/c`, where X.Y.Z is the zookeeper version. You may change the name `zookeeper-X.Y.Z/src/c` to `zookeeper-c-api-X.Y.Z` according to your zookeeper version when copying that directory to the current zklua directory.
 
-After you have copied zookeeper c API source code into the zklua directory, the layout of zklua directory will looks like the following:
+After you have copied zookeeper c API source code into the zklua directory, the layout of zklua directory looks like the following:
 
     .
     ├── ansidecl.h
