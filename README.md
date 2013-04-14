@@ -84,7 +84,7 @@ Here is a tiny lua example to show you deleting a ZNode from zookeeper server.
 	io.read()
 
 # API specification #
-TODOs
+See docs/zklua.lua for more details about zklua's API specification.
 
 # License #
 Licensed to the Apache Software Foundation (ASF) under one
