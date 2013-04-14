@@ -32,8 +32,6 @@ After you have copied zookeeper c API source code into the zklua directory, the 
     ├── strcasecmp.c
     ├── zklua.c
     ├── zklua.h
-    ├── zklua.o
-    ├── zklua.so
     └── zookeeper-c-api-3.4.5
 
 (NOTE: $(ZOOKEEPER_C_API_DIR) is a variable in zklua's Makefile, as the following Makefile snippets(copied from zklua/Makefile) show, you may get how to modify ZOOKEEPER_C_API_DIR of your own right now.)
