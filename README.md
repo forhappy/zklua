@@ -3,19 +3,31 @@ Zklua is the first(as far as I know) lua binding of apache zookeeper. If you are
 
 > [ZooKeeper](http://zookeeper.apache.org/ "Apache ZooKeeper") is a high-performance coordination service for distributed applications. It exposes common services - such as naming, configuration management, synchronization, and group services - in a simple interface so you don't have to write them from scratch. You can use it off-the-shelf to implement consensus, group management, leader election, and presence protocols.
 
-Zklua provides a complete API binding of Lua for apache zookeeper(hereinafter referred to as `zookeeper`), including synchronous and asynchronous interface as well as some useful auxiliary APIs. That is, you may create/delete/get/update(CRUD) a zookeeper node(ZNode) in lua language easily and without any pains.
+Zklua provides a complete API binding of Lua for apache zookeeper(hereinafter referred to as `zookeeper`), including synchronous and asynchronous interface as well as some useful auxiliary APIs. That is, you may create/delete/get/update(CRUD) a zookeeper node(ZNode) in lua language synchronously and/or asynchronously without any pains.
 
 # How to build zklua #
 ## Prepare to build zklua ##
 First of all, you have to get zklua source code from github:
 
-    `~$git clone git@github.com:forhappy/zklua.git`
+    ~$git clone git@github.com:forhappy/zklua.git
 
 ## Dependencies ##
 Zklua has no other dependencies except for zookeeper c API implementation, which usually resides in `zookeeper-X.Y.Z/src/c`. You need to copy the C API implementation code into the zklua directory and modify the zklua Makefile a little to compile zookeeper c API properly, which will be described in details in the next section `Install zklua`.
 
 # Install zklua #
 In order to help zklua to find zookeeper c library, you should copy the zookeeper c API source code manually from zookeeper source code directory, and you may have to modify the $(ZOOKEEPER_C_API_DIR) variable to the name of your zookeeper c api directory(This can help you to avoid installing the extra zookeeper c libraries into your system if you do not want them to be installed), and usually the zookeeper c API resides in the following directory: `zookeeper-X.Y.Z/src/c`, where X.Y.Z is the zookeeper version. You may change the name `zookeeper-X.Y.Z/src/c` to `zookeeper-c-api-X.Y.Z` according to your zookeeper version when copying that directory to the current zklua directory.
+
+After you have copied zookeeper c API source code into the zklua directory, the layout of zklua directory will looks like the following:
+
+    
+
+all you have to do next is just a `make` to compile zklua:
+
+    zklua$ make
+
+If you want to install zklua into your system after you have compiled zklua, you need to `make install`(as root):
+
+    zklua$ make install
 
 # Getting started in 5 minutes #
 ## Examples ##
