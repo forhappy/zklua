@@ -19,7 +19,22 @@ In order to help zklua to find zookeeper c library, you should copy the zookeepe
 
 After you have copied zookeeper c API source code into the zklua directory, the layout of zklua directory will looks like the following:
 
-    
+    .
+    ├── ansidecl.h
+    ├── AUTHORS
+    ├── COPYING
+    ├── docs
+    ├── examples
+    ├── LICENSE.txt
+    ├── Makefile
+    ├── README.md
+    ├── rockspec
+    ├── strcasecmp.c
+    ├── zklua.c
+    ├── zklua.h
+    ├── zklua.o
+    ├── zklua.so
+    └── zookeeper-c-api-3.4.5
 
 all you have to do next is just a `make` to compile zklua:
 
