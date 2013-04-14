@@ -36,6 +36,14 @@ After you have copied zookeeper c API source code into the zklua directory, the 
     ├── zklua.so
     └── zookeeper-c-api-3.4.5
 
+(NOTE: $(ZOOKEEPER_C_API_DIR) is a variable in zklua's Makefile, as the following Makefile snippets(copied from zklua/Makefile) show, you may get how to modify ZOOKEEPER_C_API_DIR of your own right now.)
+
+    all: zklua.so
+
+    ZOOKEEPER_C_API_DIR = ./zookeeper-c-api-3.4.5
+    ZOOKEEPER_INCLUDE_DIR = $(ZOOKEEPER_C_API_DIR)/include/
+    ZOOKEEPER_MT_AR_LIB = $(ZOOKEEPER_C_API_DIR)/.libs/libzookeeper_mt.a
+
 all you have to do next is just a `make` to compile zklua:
 
     zklua$ make
