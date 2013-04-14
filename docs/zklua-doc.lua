@@ -2,13 +2,13 @@
 
 ---signature of a watcher function.
 --
---There are two ways to receive watch notifications: legacy and watcher object.<p>
+--There are two ways to receive watch notifications: legacy and watcher object.
 --The legacy style, an application wishing to receive events from ZooKeeper must
---first implement a function with this signature and pass a pointer to the function to  init,
+--first implement a function with this signature and pass a pointer to the
+--function to init.
 --
---Next, the application sets a watch by calling one of
---the getter API that accept the watch integer flag (
---for example,  aexists,  get, etc).
+--Next, the application sets a watch by calling one of the getter API
+--that accept the watch integer flag (for example,  aexists,  get, etc).
 --
 --The watcher object style uses an instance of a "watcher object" which in
 --the C world is represented by a pair: a pointer to a function implementing this
@@ -77,14 +77,13 @@ function stat_completion(rc, stat, data) end
 --@param value the value of the information returned by the asynchronous call.
 --If a non zero error code is returned, the content of value is undefined.
 --The programmer is NOT responsible for freeing value.
---@param value_len the number of bytes in value.
 --@param stat a pointer to the stat information for the node involved in
 --this function. If a non zero error code is returned, the content of
 --stat is undefined. The programmer is NOT responsible for freeing stat.
 --@param data the pointer that was passed by the caller when the function
 --that this completion corresponds to was invoked. The programmer
 --is responsible for any memory freeing associated with the data pointer.
-function data_completion(rc, value, value_len, stat, data) end
+function data_completion(rc, value, stat, data) end
 
 
 ---signature of a strings completion function.
@@ -213,8 +212,8 @@ function init(host, watcher_fn, recv_timeout, clientid, context, flags) end
 --@param zh the zookeeper handle obtained by a call to  init
 --@return a result code, regardless of the error code returned, the zhandle will be destroyed and all resources freed.
 --
---ZOK - success 
---ZBADARGUMENTS - invalid input parameters 
+--ZOK - success
+--ZBADARGUMENTS - invalid input parameters
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --ZOPERATIONTIMEOUT - failed to flush the buffers within the specified timeout.
 --ZCONNECTIONLOSS - a network error occured while attempting to send request to server.
@@ -263,7 +262,6 @@ function get_connected_host(zh) end
 --@param path The name of the node. Expressed as a file name with slashes
 --separating ancestors of the node.
 --@param value The data to be stored in the node.
---@param valuelen The number of bytes in data.
 --@param acl The initial ACL of the node. The ACL must not be null or empty.
 --@param flags this parameter can be set to 0 for normal create or an OR
 --of the Create Flags.
@@ -281,7 +279,7 @@ function get_connected_host(zh) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory
 --
-function acreate(zh, path, value, valuelen, acl, flags, string_completion, data) end
+function acreate(zh, path, value, acl, flags, string_completion, data) end
 
 
 ---delete a node in zookeeper.
@@ -419,7 +417,6 @@ function awget(zh, path, watcher_fn, watcherctx, data_completion, data) end
 --@param path the name of the node. Expressed as a file name with slashes 
 --separating ancestors of the node.
 --@param buffer the buffer holding data to be written to the node.
---@param buflen the number of bytes from buffer to write.
 --@param version the expected version of the node. The function will fail if 
 --the actual version of the node does not match the expected version. If -1 is 
 --used the version check will not take place. * completion: If null, 
@@ -438,7 +435,7 @@ function awget(zh, path, watcher_fn, watcherctx, data_completion, data) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory
 --
-function aset(zh, path, buffer, buflen, version, stat_completion, data) end
+function aset(zh, path, buffer, version, stat_completion, data) end
 
 
 ---lists the children of a node.
@@ -498,7 +495,7 @@ function awget_children(zh, path, watcher_fn, watcherctx, strings_completion, da
 --@param zh the zookeeper handle obtained by a call to  init
 --@param path the name of the node. Expressed as a file name with slashes
 --separating ancestors of the node.
---@param watch if nonzero, a watch will be set at the server to notify 
+--@param watch if nonzero, a watch will be set at the server to notify
 --the client if the node changes.
 --@param string_stat_completion the routine to invoke when the request completes. The completion
 --will be triggered with one of the following codes passed in as the rc argument:
@@ -630,7 +627,6 @@ function zerror(c) end
 --@param scheme the id of authentication scheme. Natively supported:
 --"digest" password-based authentication
 --@param cert application credentials. The actual value depends on the scheme.
---@param certLen the length of the data parameter
 --@param void_completion the routine to invoke when the request completes. One of
 --the following result codes may be passed into the completion callback:
 --ZOK operation completed successfully.
@@ -643,7 +639,7 @@ function zerror(c) end
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --ZSYSTEMERROR - a system error occured.
 --
-function add_auth(zh, scheme, cert, certLen, void_completion, data) end
+function add_auth(zh, scheme, cert, void_completion, data) end
 
 
 ---checks if the current zookeeper connection state can't be recovered.
@@ -694,22 +690,10 @@ function deterministic_conn_order(yesorno) end
 --@param zh the zookeeper handle obtained by a call to  init
 --@param path The name of the node. Expressed as a file name with slashes
 --separating ancestors of the node.
---@param value The data to be stored in the node.
---@param valuelen The number of bytes in data. To set the data to be NULL use
---value as NULL and valuelen as -1.
 --@param acl The initial ACL of the node. The ACL must not be null or empty.
 --@param flags this parameter can be set to 0 for normal create or an OR
 --of the Create Flags
---@param pathbuf Buffer which will be filled with the path of the
---new node (this might be different than the supplied path
---because of the ZOO_SEQUENCE flag).  The path string will always be
---null-terminated. This parameter may be NULL if path_buffer_len = 0.
---@param pathbuf_len Size of path buffer; if the path of the new
---node (including space for the null terminator) exceeds the buffer size,
---the path string will be truncated to fit.  The actual path of the
---new node in the server will not be affected by the truncation.
---The path string will always be null-terminated.
---@return  one of the following codes are returned:
+--@return 1).one of the following codes are returned, 2) path buffer of the node:
 --ZOK operation completed successfully.
 --ZNONODE the parent node does not exist.
 --ZNODEEXISTS the node already exists.
@@ -719,7 +703,7 @@ function deterministic_conn_order(yesorno) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function create(zh, path, value, valuelen, acl, flags, pathbuf, pathbuf_len) end
+function create(zh, path, value, acl, flags) end
 
 
 ---delete a node in zookeeper synchronously.
@@ -751,8 +735,7 @@ function delete(zh, path, version) end
 --@param watch if nonzero, a watch will be set at the server to notify the
 --client if the node changes. The watch will be set even if the node does not
 --exist. This allows clients to watch for nodes to appear.
---@param stat the return stat value of the node.
---@return  return code of the function call.
+--@return 1): return code of the function call, 2): stat struct fo the ZNode.
 --ZOK operation completed successfully.
 --ZNONODE the node does not exist.
 --ZNOAUTH the client does not have permission.
@@ -760,7 +743,7 @@ function delete(zh, path, version) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function exists(zh, path, watch, stat) end
+function exists(zh, path, watch) end
 
 
 ---checks the existence of a node in zookeeper synchronously.
@@ -777,8 +760,7 @@ function exists(zh, path, watch, stat) end
 --@param watcherctx user specific data, will be passed to the watcher callback.
 --Unlike the global context set by  init, this watcher context
 --is associated with the given instance of the watcher only.
---@param stat the return stat value of the node.
---@return  return code of the function call.
+--@return 1): return code of the function call, 2): stat struc of the ZNode.
 --ZOK operation completed successfully.
 --ZNONODE the node does not exist.
 --ZNOAUTH the client does not have permission.
@@ -786,7 +768,7 @@ function exists(zh, path, watch, stat) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function wexists(zh, path, watcher_fn, watcherctx, stat) end
+function wexists(zh, path, watcher_fn, watcherctx) end
 
 
 ---gets the data associated with a node synchronously.
@@ -796,11 +778,8 @@ function wexists(zh, path, watcher_fn, watcherctx, stat) end
 --separating ancestors of the node.
 --@param watch if nonzero, a watch will be set at the server to notify
 --the client if the node changes.
---@param buffer the buffer holding the node data returned by the server
---@param buffer_len is the size of the buffer pointed to by the buffer parameter.
 --It'll be set to the actual data length upon return. If the data is NULL, length is -1.
---@param stat if not NULL, will hold the value of stat for the path on return.
---@return return value of the function call.
+--@return 1): return value of the function call, 2): value buffer containing the node data, 3): stat struct of the ZNode.
 --ZOK operation completed successfully.
 --ZNONODE the node does not exist.
 --ZNOAUTH the client does not have permission.
@@ -808,7 +787,7 @@ function wexists(zh, path, watcher_fn, watcherctx, stat) end
 --ZINVALIDSTATE - zhandle state is either in ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function get(zh, path, watch, buffer, buffer_len, stat) end
+function get(zh, path, watch) end
 
 
 ---gets the data associated with a node synchronously.
@@ -824,11 +803,8 @@ function get(zh, path, watch, buffer, buffer_len, stat) end
 --@param watcherctx user specific data, will be passed to the watcher callback.
 --Unlike the global context set by  init, this watcher context
 --is associated with the given instance of the watcher only.
---@param buffer the buffer holding the node data returned by the server
---@param buffer_len is the size of the buffer pointed to by the buffer parameter.
 --It'll be set to the actual data length upon return. If the data is NULL, length is -1.
---@param stat if not NULL, will hold the value of stat for the path on return.
---@return return value of the function call.
+--@return 1): return value of the function call, 2): buffer holding the node data, 3): stat struct of the ZNode.
 --ZOK operation completed successfully.
 --ZNONODE the node does not exist.
 --ZNOAUTH the client does not have permission.
@@ -836,7 +812,7 @@ function get(zh, path, watch, buffer, buffer_len, stat) end
 --ZINVALIDSTATE - zhandle state is either in ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function wget(zh, path, watcher_fn, watcherctx, buffer, buffer_len, stat) end
+function wget(zh, path, watcher_fn, watcherctx) end
 
 
 ---sets the data associated with a node.
@@ -848,8 +824,6 @@ function wget(zh, path, watcher_fn, watcherctx, buffer, buffer_len, stat) end
 --@param path the name of the node. Expressed as a file name with slashes
 --separating ancestors of the node.
 --@param buffer the buffer holding data to be written to the node.
---@param buflen the number of bytes from buffer to write. To set NULL as data
---use buffer as NULL and buflen as -1.
 --@param version the expected version of the node. The function will fail if
 --the actual version of the node does not match the expected version. If -1 is
 --used the version check will not take place.
@@ -862,7 +836,7 @@ function wget(zh, path, watcher_fn, watcherctx, buffer, buffer_len, stat) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function set(zh, path, buffer, buflen, version) end
+function set(zh, path, buffer, version) end
 
 
 ---sets the data associated with a node.
@@ -880,8 +854,7 @@ function set(zh, path, buffer, buflen, version) end
 --@param version the expected version of the node. The function will fail if
 --the actual version of the node does not match the expected version. If -1 is
 --used the version check will not take place.
---@param stat if not NULL, will hold the value of stat for the path on return.
---@return the return code for the function call.
+--@return 1): the return code for the function call, 2): stat struct of the ZNode.
 --ZOK operation completed successfully.
 --ZNONODE the node does not exist.
 --ZNOAUTH the client does not have permission.
@@ -890,7 +863,7 @@ function set(zh, path, buffer, buflen, version) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function set2(zh, path, buffer, buflen, version, stat) end
+function set2(zh, path, buffer, version) end
 
 
 --- lists the children of a node synchronously.
@@ -925,8 +898,7 @@ function get_children(zh, path, watch, strings) end
 --@param watcherctx user specific data, will be passed to the watcher callback.
 --Unlike the global context set by  init, this watcher context
 --is associated with the given instance of the watcher only.
---@param strings return value of children paths.
---@return the return code of the function.
+--@return 1): the return code of the function, 2): value of children paths.
 --ZOK operation completed successfully.
 --ZNONODE the node does not exist.
 --ZNOAUTH the client does not have permission.
@@ -934,7 +906,7 @@ function get_children(zh, path, watch, strings) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function wget_children(zh, path, watcher_fn, watcherctx, strings) end
+function wget_children(zh, path, watcher_fn, watcherctx) end
 
 
 ---lists the children of a node and get its stat synchronously.
@@ -946,9 +918,7 @@ function wget_children(zh, path, watcher_fn, watcherctx, strings) end
 --separating ancestors of the node.
 --@param watch if nonzero, a watch will be set at the server to notify
 --the client if the node changes.
---@param strings return value of children paths.
---@param stat return value of node stat.
---@return the return code of the function.
+--@return 1): the return code of the function, 2): value of children paths, 3): value of node stat.
 --ZOK operation completed successfully.
 --ZNONODE the node does not exist.
 --ZNOAUTH the client does not have permission.
@@ -956,7 +926,7 @@ function wget_children(zh, path, watcher_fn, watcherctx, strings) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function get_children2(zh, path, watch, strings, stat) end
+function get_children2(zh, path, watch) end
 
 
 ---lists the children of a node and get its stat synchronously.
@@ -974,9 +944,7 @@ function get_children2(zh, path, watch, strings, stat) end
 --@param watcherctx user specific data, will be passed to the watcher callback.
 --Unlike the global context set by  init, this watcher context
 --is associated with the given instance of the watcher only.
---@param strings return value of children paths.
---@param stat return value of node stat.
---@return the return code of the function.
+--@return 1): the return code of the function, 2): value of children paths, 3): value of node stat.
 --ZOK operation completed successfully.
 --ZNONODE the node does not exist.
 --ZNOAUTH the client does not have permission.
@@ -984,7 +952,7 @@ function get_children2(zh, path, watch, strings, stat) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function wget_children2(zh, path, watcher_fn , watcherctx, strings, stat) end
+function wget_children2(zh, path, watcher_fn , watcherctx) end
 
 
 ---gets the acl associated with a node synchronously.
@@ -992,9 +960,7 @@ function wget_children2(zh, path, watcher_fn , watcherctx, strings, stat) end
 --@param zh the zookeeper handle obtained by a call to  init
 --@param path the name of the node. Expressed as a file name with slashes
 --separating ancestors of the node.
---@param acl the return value of acls on the path.
---@param stat returns the stat of the path specified.
---@return the return code for the function call.
+--@return 1): the return code for the function call, 2): value of ACLs on the path, 3): stat of the path specified.
 --ZOK operation completed successfully.
 --ZNONODE the node does not exist.
 --ZNOAUTH the client does not have permission.
@@ -1002,7 +968,7 @@ function wget_children2(zh, path, watcher_fn , watcherctx, strings, stat) end
 --ZINVALIDSTATE - zhandle state is either ZOO_SESSION_EXPIRED_STATE or ZOO_AUTH_FAILED_STATE.
 --ZMARSHALLINGERROR - failed to marshall a request; possibly, out of memory.
 --
-function get_acl(zh, path, acl, stat) end
+function get_acl(zh, path) end
 
 
 ---sets the acl associated with a node synchronously.
