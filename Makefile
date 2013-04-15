@@ -19,8 +19,6 @@ else
 LDFLAGS += -shared -lrt
 endif
 
-
-
 SRCS := zklua.c
 
 OBJS := $(patsubst %.c,%.o,$(SRCS))
