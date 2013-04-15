@@ -9,8 +9,6 @@ INSTALL_PATH = `pkg-config lua5.1 --variable=INSTALL_CMOD`
 OS_NAME = $(shell uname -s)
 MH_NAME = $(shell uname -m)
 
-LDFLAGS += -lm -ldl -lpthread -L$(ZOOKEEPER_LIB_DIR) -lzookeeper_mt
-
 ifeq ($(OS_NAME), Darwin)
 LDFLAGS += -bundle -undefined dynamic_lookup -framework CoreServices
 ifeq ($(MH_NAME), x86_64)
@@ -18,6 +16,8 @@ endif
 else
 LDFLAGS += -shared -lrt
 endif
+
+LDFLAGS += -lm -ldl -lpthread -L$(ZOOKEEPER_LIB_DIR) -lzookeeper_mt
 
 SRCS := zklua.c
 
