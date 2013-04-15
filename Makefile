@@ -3,7 +3,7 @@ all: zklua.so
 ZOOKEEPER_LIB_DIR = /usr/local/lib
 
 CC = gcc
-CFLAGS = `pkg-config lua5.1 --cflags` -I$(ZOOKEEPER_INCLUDE_DIR) -fPIC -O2 #-Wall
+CFLAGS = `pkg-config --cflags lua5.1` -fPIC -O2 #-Wall
 INSTALL_PATH = `pkg-config lua5.1 --variable=INSTALL_CMOD`
 
 OS_NAME = $(shell uname -s)
