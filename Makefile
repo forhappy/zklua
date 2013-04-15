@@ -1,10 +1,21 @@
 all: zklua.so
 
+# You may need to change the following variables according to
+# your system, here are the descriptions of these variables:
+#
+# ZOOKEEPER_LIB_DIR: Zookeeper C API library path.
+# LUA_LIB_DIR: Lua library path.
+# LUA_VERSION: Lua version.
+# LUA_VERSION_NUMBER: Lua version number.
 ZOOKEEPER_LIB_DIR = /usr/local/lib
+LUA_LIB_DIR = /usr/local/lib/lua
+LUA_VERSION = lua5.1
+LUA_VERSION_NUMBER = 5.1
 
 CC = gcc
-CFLAGS = `pkg-config --cflags lua5.1` -fPIC -O2 #-Wall
-INSTALL_PATH = `pkg-config lua5.1 --variable=INSTALL_CMOD`
+CFLAGS = `pkg-config --cflags $(LUA_VERSION)` -fPIC -O2 #-Wall
+# INSTALL_PATH = `pkg-config $(LUA_VERSION) --variable=INSTALL_CMOD`
+INSTALL_PATH = $(LUA_LIB_DIR)/$(LUA_VERSION_NUMBER)
 
 OS_NAME = $(shell uname -s)
 MH_NAME = $(shell uname -m)
