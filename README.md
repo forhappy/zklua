@@ -12,37 +12,11 @@ First of all, you have to get zklua source code from github:
     ~$git clone git@github.com:forhappy/zklua.git
 
 ## Dependencies ##
-Zklua has no other dependencies except for zookeeper c API implementation, which usually resides in `zookeeper-X.Y.Z/src/c`. You need to copy the C API implementation code into the zklua directory and modify the zklua Makefile a little to compile zookeeper c API properly, which will be described in details in the next section `Install zklua`.
+Zklua has no other dependencies except for zookeeper c API implementation, which usually resides in `zookeeper-X.Y.Z/src/c`, hence you need to install zookeeper c API at first.
 
 # Install zklua #
-In order to help zklua to find zookeeper c library, you should copy the zookeeper c API source code manually from zookeeper source code directory, and you may have to modify the $(ZOOKEEPER_C_API_DIR) variable to the name of your zookeeper c api directory(This can help you to avoid installing the extra zookeeper c libraries into your system if you do not want them to be installed), and usually the zookeeper c API resides in the following directory: `zookeeper-X.Y.Z/src/c`, where X.Y.Z is the zookeeper version. You may change the name `zookeeper-X.Y.Z/src/c` to `zookeeper-c-api-X.Y.Z` according to your zookeeper version when copying that directory to the current zklua directory.
 
-After you have copied zookeeper c API source code into the zklua directory, the layout of zklua directory looks like the following:
-
-    .
-    ├── ansidecl.h
-    ├── AUTHORS
-    ├── COPYING
-    ├── docs
-    ├── examples
-    ├── LICENSE.txt
-    ├── Makefile
-    ├── README.md
-    ├── rockspec
-    ├── strcasecmp.c
-    ├── zklua.c
-    ├── zklua.h
-    └── zookeeper-c-api-3.4.5
-
-(NOTE: $(ZOOKEEPER_C_API_DIR) is a variable in zklua's Makefile, as the following Makefile snippets(copied from zklua/Makefile) show, you may get how to modify ZOOKEEPER_C_API_DIR of your own right now.)
-
-    all: zklua.so
-
-    ZOOKEEPER_C_API_DIR = ./zookeeper-c-api-3.4.5
-    ZOOKEEPER_INCLUDE_DIR = $(ZOOKEEPER_C_API_DIR)/include/
-    ZOOKEEPER_MT_AR_LIB = $(ZOOKEEPER_C_API_DIR)/.libs/libzookeeper_mt.a
-
-all you have to do next is just a `make` to compile zklua:
+all you have to do is just a `make` to compile zklua:
 
     zklua$ make
 
