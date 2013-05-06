@@ -1718,7 +1718,7 @@ int luaopen_zklua(lua_State *L)
     lua_setfield(L, -2, "_COPYRIGHT");
     lua_pushliteral (L, "zklua: lua binding of apache zookeeper");
     lua_setfield(L, -2, "_DESCRIPTION");
-    lua_pushliteral (L, "0.1.0");
+    lua_pushliteral (L, "0.1.1");
     lua_setfield(L, -2, "_VERSION");
 
     /**
