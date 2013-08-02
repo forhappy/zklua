@@ -131,7 +131,7 @@ void data_completion_dispatch(int rc, const char *value, int value_len,
     lua_State *L = wrapper->L;
     const char *real_data = wrapper->data;
     lua_pushinteger(L, rc);
-    lua_pushstring(L, value);
+    lua_pushlstring(L, value, value_len);
     _zklua_build_stat(L, stat);
     lua_pushstring(L, real_data);
     lua_call(L, 4, 0);
@@ -1416,7 +1416,7 @@ static int zklua_get(lua_State *L)
         watch = luaL_checkint(L, 3);
         ret = zoo_get(handle->zh, path, watch, buffer, &buffer_len, &stat);
         lua_pushinteger(L, ret);
-        lua_pushstring(L, buffer);
+        lua_pushlstring(L, buffer, buffer_len);
         _zklua_build_stat(L, &stat);
         return 3;
     } else {
@@ -1449,7 +1449,7 @@ static int zklua_wget(lua_State *L)
         ret = zoo_wget(handle->zh, path, local_watcher_dispatch,
                 (void *)wrapper, buffer, &buffer_len, &stat);
         lua_pushinteger(L, ret);
-        lua_pushstring(L, buffer);
+        lua_pushlstring(L, buffer, buffer_len);
         _zklua_build_stat(L, &stat);
         return 3;
     } else {
@@ -1716,9 +1716,9 @@ int luaopen_zklua(lua_State *L)
 #endif
     lua_pushliteral (L, "Copyright (C) 2013 Fu Haiping(forhappy)");
     lua_setfield(L, -2, "_COPYRIGHT");
-    lua_pushliteral (L, "zklua: lua binding of apache zookeeper");
+    lua_pushliteral (L, "zklua: lua binding of Apache ZooKeeper");
     lua_setfield(L, -2, "_DESCRIPTION");
-    lua_pushliteral (L, "0.1.1");
+    lua_pushliteral (L, "0.1.2");
     lua_setfield(L, -2, "_VERSION");
 
     /**
