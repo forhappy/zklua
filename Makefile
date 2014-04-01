@@ -9,7 +9,7 @@ all: zklua.so
 # LUA_VERSION_NUMBER: Lua version number.
 ZOOKEEPER_LIB_DIR = /usr/local/lib
 LUA_LIB_DIR = /usr/local/lib/lua
-LUA_VERSION = lua5.1
+LUA_VERSION = lua
 LUA_VERSION_NUMBER = 5.1
 
 CC = gcc
