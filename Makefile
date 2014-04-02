@@ -47,4 +47,9 @@ clean:
 	rm -f *.o *.so
 
 install: zklua.so
+ifeq ($(OS_NAME), Darwin)
+	install zklua.so $(INSTALL_PATH)/zklua.so
+else
 	install -D -s zklua.so $(INSTALL_PATH)/zklua.so
+endif
+	
