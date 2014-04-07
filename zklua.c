@@ -288,6 +288,7 @@ static int _zklua_build_string_vector(lua_State *L, const struct String_vector *
             lua_rawseti(L, -2, i);
         }
     }
+    return 0;
 }
 
 static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls)
@@ -309,6 +310,7 @@ static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls)
             lua_rawseti(L, -2, i);
         }
     }
+    return 0;
 }
 
 /**
@@ -686,6 +688,7 @@ static int zklua_get_connected_host(lua_State *L)
     } else {
         return luaL_error(L, "unable to get connected host.");
     }
+    return 0;
 }
 
 /**
@@ -694,6 +697,7 @@ static int zklua_get_connected_host(lua_State *L)
 static int zklua_interest(lua_State *L)
 {
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    return 0;
 }
 
 /**
@@ -702,6 +706,7 @@ static int zklua_interest(lua_State *L)
 static int zklua_process(lua_State *L)
 {
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
+    return 0;
 }
 
 static int zklua_state(lua_State *L)
