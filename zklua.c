@@ -1668,7 +1668,7 @@ static const luaL_Reg zklua[] =
     {"recv_timeout", zklua_recv_timeout},
     {"get_context", zklua_get_context},
     {"set_watcher", zklua_set_watcher},
-    {"get_connected_host", zklua_get_connected_host},
+//    {"get_connected_host", zklua_get_connected_host},
     {"interest", zklua_interest},
     {"process", zklua_process},
     {"state", zklua_state},
