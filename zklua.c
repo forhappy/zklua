@@ -1409,8 +1409,8 @@ static int zklua_get(lua_State *L)
 {
     size_t path_len = 0;
     const char *path = NULL;
-    char *buffer = NULL;
-    int buffer_len = 0;
+    char *buffer = malloc(2048);
+    int buffer_len = 2048;
     int watch = 0;
     struct Stat stat;
     int ret = -1;
@@ -1422,6 +1422,7 @@ static int zklua_get(lua_State *L)
         ret = zoo_get(handle->zh, path, watch, buffer, &buffer_len, &stat);
         lua_pushinteger(L, ret);
         lua_pushlstring(L, buffer, buffer_len);
+        free(buffer);
         _zklua_build_stat(L, &stat);
         return 3;
     } else {
