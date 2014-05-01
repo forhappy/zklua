@@ -9,7 +9,9 @@ Zklua provides a complete API binding of Lua for apache zookeeper(hereinafter re
 ## Prepare to build zklua ##
 First of all, you have to get zklua source code from github:
 
-    ~$git clone git@github.com:forhappy/zklua.git
+```bash
+$ git clone git@github.com:forhappy/zklua.git
+```
 
 ## Dependencies ##
 Zklua has no other dependencies except for zookeeper c API implementation, which usually resides in `zookeeper-X.Y.Z/src/c`, hence you need to install zookeeper c API at first.
@@ -18,11 +20,15 @@ Zklua has no other dependencies except for zookeeper c API implementation, which
 
 all you have to do is just a `make` to compile zklua:
 
-    zklua$ make
+```bash
+$ make
+```
 
 If you want to install zklua into your system after you have compiled zklua, you need to `make install`(as root):
 
-    zklua$ make install
+```bash
+$ make install
+```
 
 # Getting started in 5 minutes #
 ## Examples ##
@@ -31,71 +37,77 @@ If you want to install zklua into your system after you have compiled zklua, you
 
 Here is a tiny lua example to show you deleting a ZNode from zookeeper server.
 
-    require "zklua"
+```lua
+require "zklua"
   
-	function zklua_my_watcher(zh, type, state, path, watcherctx)
-    	if type == zklua.ZOO_SESSION_EVENT then
-        	if state == zklua.ZOO_CONNECTED_STATE then
-            	print("Connected to zookeeper service successfully!\n");
-         	elseif (state == ZOO_EXPIRED_SESSION_STATE) then
-            	print("Zookeeper session expired!\n");
-        	end
-    	end
-	end
+function zklua_my_watcher(zh, type, state, path, watcherctx)
+    if type == zklua.ZOO_SESSION_EVENT then
+        if state == zklua.ZOO_CONNECTED_STATE then
+            print("Connected to zookeeper service successfully!\n");
+            elseif (state == ZOO_EXPIRED_SESSION_STATE) then
+            print("Zookeeper session expired!\n");
+        end
+    end
+end
 	
-	function zklua_my_void_completion(rc, data)
-   		print("zklua_my_void_completion:\n")
-    	print("rc: "..rc.."\tdata: "..data)
-	end
+function zklua_my_void_completion(rc, data)
+    print("zklua_my_void_completion:\n")
+    print("rc: "..rc.."\tdata: "..data)
+end
 	
-	zklua.set_log_stream("zklua.log")
+zklua.set_log_stream("zklua.log")
 	
-	zh = zklua.init("127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", zklua_my_watcher, 10000)
+zh = zklua.init("127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", zklua_my_watcher, 10000)
 	
-	ret = zklua.adelete(zh, "/zklua", -1, zklua_my_void_completion, "zklua adelete.")
-	print("zklua.adelete ret: "..ret)
+ret = zklua.adelete(zh, "/zklua", -1, zklua_my_void_completion, "zklua adelete.")
+print("zklua.adelete ret: "..ret)
 	
-	print("hit any key to continue...")
-	io.read()
+print("hit any key to continue...")
+io.read()
+```
 
 **Set watch on a specified path.**
 
 Here is a tiny lua example to show you set a watch on a specified path.
 
-    require "zklua"
+```lua
+require "zklua"
     
-    function zklua_my_global_watcher(zh, type, state, path, watcherctx)
-        if type == zklua.ZOO_SESSION_EVENT then
-            if state == zklua.ZOO_CONNECTED_STATE then
-                print("Connected to zookeeper service successfully!\n");
-             elseif (state == ZOO_EXPIRED_SESSION_STATE) then
-                print("Zookeeper session expired!\n");
-            end
+function zklua_my_global_watcher(zh, type, state, path, watcherctx)
+    if type == zklua.ZOO_SESSION_EVENT then
+        if state == zklua.ZOO_CONNECTED_STATE then
+            print("Connected to zookeeper service successfully!\n");
+         elseif (state == ZOO_EXPIRED_SESSION_STATE) then
+            print("Zookeeper session expired!\n");
         end
     end
+end
 
-    function zklua_my_local_watcher(zh, type, state, path, watcherctx)
-        print("zklua_my_local_watcher(".."type: "..type..", state: "..state..", path: "..path..")")
-        print("zklua_my_local_watcher(".."watcherctx: "..watcherctx..")")
-    end
+function zklua_my_local_watcher(zh, type, state, path, watcherctx)
+    print("zklua_my_local_watcher(".."type: "..type..", state: "..state..", path: "..path..")")
+    print("zklua_my_local_watcher(".."watcherctx: "..watcherctx..")")
+end
     
-    function zklua_my_stat_completion(rc, stat, data)
-        print("zklua_my_stat_completion:\n")
-        print("rc: "..rc.."\tdata: "..data)
-    end
+function zklua_my_stat_completion(rc, stat, data)
+    print("zklua_my_stat_completion:\n")
+    print("rc: "..rc.."\tdata: "..data)
+end
     
-    zklua.set_log_stream("zklua.log")
+zklua.set_log_stream("zklua.log")
     
-    zh = zklua.init("127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", zklua_my_global_watcher, 10000)
+zh = zklua.init("127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183", zklua_my_global_watcher, 10000)
     
-    ret = zklua.awexists(zh, "/zklua", zklua_my_local_watcher,"zklua_my_local_watcher", zklua_my_stat_completion, "zklua aexists.")
-    print("zklua.aexists ret: "..ret)
+ret = zklua.awexists(zh, "/zklua",
+                     zklua_my_local_watcher,"zklua_my_local_watcher",
+                     zklua_my_stat_completion, "zklua aexists.")
+print("zklua.aexists ret: "..ret)
     
-    print("hit any key to continue...")
-    io.read()
+print("hit any key to continue...")
+io.read()
+```
 
 # API specification #
-See docs/zklua.lua for more details about zklua's API specification.
+See [docs/zklua.lua](https://raw.githubusercontent.com/forhappy/zklua/master/docs/zklua.lua) for more details about zklua's API specification.
 
 # License #
 Licensed to the Apache Software Foundation (ASF) under one
