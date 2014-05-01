@@ -307,7 +307,7 @@ static int _zklua_build_acls(lua_State *L, const struct ACL_vector *acls)
             lua_pushstring(L, "id");
             lua_pushstring(L, acls->data[i].id.id);
             lua_settable(L, -3);
-            lua_rawseti(L, -2, i);
+            lua_rawseti(L, -2, i+1);
         }
     }
     return 0;
