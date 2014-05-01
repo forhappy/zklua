@@ -25,7 +25,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
-
+_
 #include "zklua.h"
 
 static FILE *zklua_log_stream = NULL;
@@ -333,17 +333,17 @@ static int _zklua_parse_acls(lua_State *L, int index, struct ACL_vector *acls)
         lua_rawgeti(L, index, i);
 
         lua_pushstring(L, "perms");
-        lua_rawget(L, -1);
+        lua_rawget(L, -2);
         acls->data[i-1].perms = lua_tointeger(L, -1);
         lua_pop(L, 1);
 
         lua_pushstring(L, "scheme");
-        lua_rawget(L, -1);
+        lua_rawget(L, -2);
         acls->data[i-1].id.scheme = strdup(lua_tostring(L, -1));
         lua_pop(L, 1);
 
         lua_pushstring(L, "id");
-        lua_rawget(L, -1);
+        lua_rawget(L, -2);
         acls->data[i-1].id.id = strdup(lua_tostring(L, -1));
         lua_pop(L, 1);
 
