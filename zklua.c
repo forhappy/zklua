@@ -285,7 +285,7 @@ static int _zklua_build_string_vector(lua_State *L, const struct String_vector *
     if (sv != NULL) {
         for (i = 0; i < sv->count; ++i) {
             lua_pushstring(L, sv->data[i]);
-            lua_rawseti(L, -2, i);
+            lua_rawseti(L, -2, i+1);
         }
     }
     return 0;
