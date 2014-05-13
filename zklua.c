@@ -1703,6 +1703,8 @@ static const luaL_Reg zklua[] =
     {"set2", zklua_set2},
     {"get_children", zklua_get_children},
     {"get_children2", zklua_get_children2},
+    {"wget_children", zklua_wget_children},
+    {"wget_children2", zklua_wget_children2},
     {"get_acl", zklua_get_acl},
     {"set_acl", zklua_set_acl},
     {NULL, NULL}
