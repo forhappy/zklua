@@ -17,15 +17,12 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #ifndef WIN32
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
-_
+
 #include "zklua.h"
 
 static FILE *zklua_log_stream = NULL;
