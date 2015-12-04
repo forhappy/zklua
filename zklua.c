@@ -25,7 +25,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
-_
+
 #include "zklua.h"
 
 static FILE *zklua_log_stream = NULL;
@@ -55,7 +55,7 @@ void watcher_dispatch(zhandle_t *zh, int type, int state,
 {
     zklua_global_watcher_context_t *wrapper = (zklua_global_watcher_context_t *)watcherctx;
     lua_State *L = wrapper->L;
-    void *context = wrapper->context;
+    int ctxref = wrapper->ctxref;
 
     /** push lua watcher_fn onto the stack. */
     lua_pushlightuserdata(L, (void *)&watcher_fn_key);
@@ -70,8 +70,9 @@ void watcher_dispatch(zhandle_t *zh, int type, int state,
     /** push path onto the stack. */
     lua_pushstring(L, path);
     /** push watcher context onto the stack. */
-    lua_pushstring(L, context);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, ctxref);
     lua_call(L, 5, 0);
+    _zklua_unref(L, ctxref);
 }
 
 void local_watcher_dispatch(zhandle_t *zh, int type, int state,
@@ -79,7 +80,7 @@ void local_watcher_dispatch(zhandle_t *zh, int type, int state,
 {
     zklua_local_watcher_context_t *wrapper = (zklua_local_watcher_context_t *)watcherctx;
     lua_State *L = wrapper->L;
-    void *context = wrapper->context;
+    int ctxref = wrapper->ctxref;
     int zhref = wrapper->zhref;
     int cbref = wrapper->cbref;
 
@@ -94,10 +95,11 @@ void local_watcher_dispatch(zhandle_t *zh, int type, int state,
     /** push path onto the stack. */
     lua_pushstring(L, path);
     /** push watcher context onto the stack. */
-    lua_pushstring(L, context);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, ctxref);
     lua_call(L, 5, 0);
     _zklua_unref(L, zhref);
     _zklua_unref(L, cbref);
+    _zklua_unref(L, ctxref);
 }
 
 void void_completion_dispatch(int rc, const void *data)
@@ -285,7 +287,7 @@ static int _zklua_build_string_vector(lua_State *L, const struct String_vector *
     if (sv != NULL) {
         for (i = 0; i < sv->count; ++i) {
             lua_pushstring(L, sv->data[i]);
-            lua_rawseti(L, -2, i);
+            lua_rawseti(L, -2, i+1);
         }
     }
     return 0;
@@ -393,7 +395,7 @@ static int _zklua_unref(lua_State *L, int ref)
 }
 
 static zklua_global_watcher_context_t *_zklua_global_watcher_context_init(
-        lua_State *L, void *data)
+        lua_State *L, int ctxref)
 {
     zklua_global_watcher_context_t *wrapper = (zklua_global_watcher_context_t *)malloc(
         sizeof(zklua_global_watcher_context_t));
@@ -402,12 +404,12 @@ static zklua_global_watcher_context_t *_zklua_global_watcher_context_init(
                 "alloc an internal object.");
     }
     wrapper->L = L;
-    wrapper->context = data;
+    wrapper->ctxref = ctxref;
     return wrapper;
 }
 
 static zklua_local_watcher_context_t *_zklua_local_watcher_context_init(
-        lua_State *L, void *data, int zhref, int cbref)
+        lua_State *L, int ctxref, int zhref, int cbref)
 {
     zklua_local_watcher_context_t *wrapper = (zklua_local_watcher_context_t *)malloc(
         sizeof(zklua_local_watcher_context_t));
@@ -416,7 +418,7 @@ static zklua_local_watcher_context_t *_zklua_local_watcher_context_init(
                 "alloc an internal object.");
     }
     wrapper->L = L;
-    wrapper->context = data;
+    wrapper->ctxref = ctxref;
     wrapper->zhref = zhref;
     wrapper->cbref = cbref;
     return wrapper;
@@ -500,8 +502,7 @@ static int zklua_init(lua_State *L)
     const char *host = NULL;
     int recv_timeout = 0;
     clientid_t *clientid = NULL;
-    size_t real_context_len = 0;
-    char *real_watcher_context = NULL;
+    int ctxref = LUA_REFNIL;
     int flags = 0;
     zklua_global_watcher_context_t *wrapper = NULL;
 
@@ -522,32 +523,44 @@ static int zklua_init(lua_State *L)
     recv_timeout = luaL_checkint(L, 3);
     switch(top) {
         case 3:
-            wrapper = _zklua_global_watcher_context_init(L, NULL);
+            wrapper = _zklua_global_watcher_context_init(L, LUA_REFNIL);
             handle->zh = zookeeper_init(host, watcher_dispatch,
                     recv_timeout, 0, wrapper, 0);
             break;
         case 4:
-            luaL_checktype(L, 4, LUA_TTABLE);
-            clientid = _zklua_clientid_init(L, 4);
-            wrapper = _zklua_global_watcher_context_init(L, NULL);
+            if (LUA_TNIL == lua_type(L, 4)) {
+                clientid = 0;
+            } else {
+                luaL_checktype(L, 4, LUA_TTABLE);
+                clientid = _zklua_clientid_init(L, 4);
+            }
+            wrapper = _zklua_global_watcher_context_init(L, LUA_REFNIL);
             handle->zh = zookeeper_init(host, watcher_dispatch,
                     recv_timeout, clientid, wrapper, 0);
             _zklua_clientid_fini(&clientid);
             break;
         case 5:
-            luaL_checktype(L, 4, LUA_TTABLE);
-            clientid = _zklua_clientid_init(L, 4);
-            real_watcher_context = (char *)luaL_checklstring(L, 5, &real_context_len);
-            wrapper = _zklua_global_watcher_context_init(L, real_watcher_context);
+            if (LUA_TNIL == lua_type(L, 4)) {
+                clientid = 0;
+            } else {
+                luaL_checktype(L, 4, LUA_TTABLE);
+                clientid = _zklua_clientid_init(L, 4);
+            }
+            ctxref = _zklua_ref(L, 5);
+            wrapper = _zklua_global_watcher_context_init(L, ctxref);
             handle->zh = zookeeper_init(host, watcher_dispatch,
                     recv_timeout, clientid, wrapper, 0);
             _zklua_clientid_fini(&clientid);
             break;
         case 6:
-            luaL_checktype(L, 4, LUA_TTABLE);
-            clientid = _zklua_clientid_init(L, 4);
-            real_watcher_context = (char *)luaL_checklstring(L, 5, &real_context_len);
-            wrapper = _zklua_global_watcher_context_init(L, real_watcher_context);
+            if (LUA_TNIL == lua_type(L, 4)) {
+                clientid = 0;
+            } else {
+                luaL_checktype(L, 4, LUA_TTABLE);
+                clientid = _zklua_clientid_init(L, 4);
+            }
+            ctxref = _zklua_ref(L, 5);
+            wrapper = _zklua_global_watcher_context_init(L, ctxref);
             flags = luaL_checkint(L, 6);
             handle->zh = zookeeper_init(host, watcher_dispatch,
                     recv_timeout, clientid, wrapper, flags);
@@ -834,7 +847,6 @@ static int zklua_aexists(lua_State *L)
 static int zklua_awexists(lua_State *L)
 {
     size_t path_len = 0;
-    const char *real_local_watcherctx = NULL;
     const char *path = NULL;
     int watch = 0;
     const char *data = NULL;
@@ -843,6 +855,7 @@ static int zklua_awexists(lua_State *L)
     int ret = -1;
     int zhref = 0;
     int cbref = 0;
+    int ctxref = 0;
 
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
     zhref = _zklua_ref(L, 1);
@@ -850,9 +863,8 @@ static int zklua_awexists(lua_State *L)
         path = luaL_checklstring(L, 2, &path_len);
         luaL_checktype(L, 3, LUA_TFUNCTION);
         cbref = _zklua_ref(L, 3);
-        real_local_watcherctx = luaL_checkstring(L, 4);
-        wrapper = _zklua_local_watcher_context_init(L,
-                (void *)real_local_watcherctx, zhref, cbref);
+        ctxref = _zklua_ref(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L, ctxref, zhref, cbref);
         luaL_checktype(L, 5, LUA_TFUNCTION);
         data = luaL_checkstring(L, 6);
         cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
@@ -906,7 +918,6 @@ static int zklua_aget(lua_State *L)
 static int zklua_awget(lua_State *L)
 {
     size_t path_len = 0;
-    const char *real_local_watcherctx = NULL;
     const char *path = NULL;
     int watch = 0;
     const char *data = NULL;
@@ -915,6 +926,7 @@ static int zklua_awget(lua_State *L)
     int ret = -1;
     int zhref = 0;
     int cbref = 0;
+    int ctxref = 0;
 
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
     zhref = _zklua_ref(L, 1);
@@ -922,9 +934,8 @@ static int zklua_awget(lua_State *L)
         path = luaL_checklstring(L, 2, &path_len);
         luaL_checktype(L, 3, LUA_TFUNCTION);
         cbref = _zklua_ref(L, 3);
-        real_local_watcherctx = luaL_checkstring(L, 4);
-        wrapper = _zklua_local_watcher_context_init(L,
-                (void *)real_local_watcherctx, zhref, cbref);
+        ctxref = _zklua_ref(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L, ctxref, zhref, cbref);
         luaL_checktype(L, 5, LUA_TFUNCTION);
         data = luaL_checkstring(L, 6);
         cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
@@ -1038,7 +1049,6 @@ static int zklua_aget_children2(lua_State *L)
 static int zklua_awget_children(lua_State *L)
 {
     size_t path_len = 0;
-    const char *real_local_watcherctx = NULL;
     const char *path = NULL;
     int watch = 0;
     const char *data = NULL;
@@ -1047,6 +1057,7 @@ static int zklua_awget_children(lua_State *L)
     int ret = -1;
     int zhref = 0;
     int cbref = 0;
+    int ctxref = 0;
 
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
     zhref = _zklua_ref(L, 1);
@@ -1054,9 +1065,8 @@ static int zklua_awget_children(lua_State *L)
         path = luaL_checklstring(L, 2, &path_len);
         luaL_checktype(L, 3, LUA_TFUNCTION);
         cbref = _zklua_ref(L, 3);
-        real_local_watcherctx = luaL_checkstring(L, 4);
-        wrapper = _zklua_local_watcher_context_init(L,
-                (void *)real_local_watcherctx, zhref, cbref);
+        ctxref = _zklua_ref(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L, ctxref, zhref, cbref);
         luaL_checktype(L, 5, LUA_TFUNCTION);
         data = luaL_checkstring(L, 6);
         cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
@@ -1077,7 +1087,6 @@ static int zklua_awget_children(lua_State *L)
 static int zklua_awget_children2(lua_State *L)
 {
     size_t path_len = 0;
-    const char *real_local_watcherctx = NULL;
     const char *path = NULL;
     int watch = 0;
     const char *data = NULL;
@@ -1086,6 +1095,7 @@ static int zklua_awget_children2(lua_State *L)
     int ret = -1;
     int zhref = 0;
     int cbref = 0;
+    int ctxref = 0;
 
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
     zhref = _zklua_ref(L, 1);
@@ -1093,9 +1103,8 @@ static int zklua_awget_children2(lua_State *L)
         path = luaL_checklstring(L, 2, &path_len);
         luaL_checktype(L, 3, LUA_TFUNCTION);
         cbref = _zklua_ref(L, 3);
-        real_local_watcherctx = luaL_checkstring(L, 4);
-        wrapper = _zklua_local_watcher_context_init(L,
-                (void *)real_local_watcherctx, zhref, cbref);
+        ctxref = _zklua_ref(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L, ctxref, zhref, cbref);
         luaL_checktype(L, 5, LUA_TFUNCTION);
         data = luaL_checkstring(L, 6);
         cdata = (zklua_completion_data_t *)malloc(sizeof(zklua_completion_data_t));
@@ -1377,7 +1386,6 @@ static int zklua_exists(lua_State *L)
 static int zklua_wexists(lua_State *L)
 {
     size_t path_len = 0;
-    const char *real_local_watcherctx = NULL;
     const char *path = NULL;
     int watch = 0;
     zklua_local_watcher_context_t *wrapper = NULL;
@@ -1385,6 +1393,7 @@ static int zklua_wexists(lua_State *L)
     int ret = -1;
     int zhref = 0;
     int cbref = 0;
+    int ctxref = 0;
 
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
     zhref = _zklua_ref(L, 1);
@@ -1392,9 +1401,8 @@ static int zklua_wexists(lua_State *L)
         path = luaL_checklstring(L, 2, &path_len);
         luaL_checktype(L, 3, LUA_TFUNCTION);
         cbref = _zklua_ref(L, 3);
-        real_local_watcherctx = luaL_checkstring(L, 4);
-        wrapper = _zklua_local_watcher_context_init(L,
-                (void *)real_local_watcherctx, zhref, cbref);
+        ctxref = _zklua_ref(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L, ctxref, zhref, cbref);
         ret = zoo_wexists(handle->zh, path, local_watcher_dispatch,
                 (void *)wrapper, &stat);
         lua_pushinteger(L, ret);
@@ -1433,7 +1441,6 @@ static int zklua_get(lua_State *L)
 static int zklua_wget(lua_State *L)
 {
     size_t path_len = 0;
-    const char *real_local_watcherctx = NULL;
     const char *path = NULL;
     char *buffer = NULL;
     int buffer_len = 0;
@@ -1442,6 +1449,7 @@ static int zklua_wget(lua_State *L)
     int ret = -1;
     int zhref = 0;
     int cbref = 0;
+    int ctxref = 0;
 
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
     zhref = _zklua_ref(L, 1);
@@ -1449,9 +1457,8 @@ static int zklua_wget(lua_State *L)
         path = luaL_checklstring(L, 2, &path_len);
         luaL_checktype(L, 3, LUA_TFUNCTION);
         cbref = _zklua_ref(L, 3);
-        real_local_watcherctx = luaL_checkstring(L, 4);
-        wrapper = _zklua_local_watcher_context_init(L,
-                (void *)real_local_watcherctx, zhref, cbref);
+        ctxref = _zklua_ref(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L, ctxref, zhref, cbref);
         ret = zoo_wget(handle->zh, path, local_watcher_dispatch,
                 (void *)wrapper, buffer, &buffer_len, &stat);
         lua_pushinteger(L, ret);
@@ -1521,6 +1528,7 @@ static int zklua_get_children(lua_State *L)
     if (_zklua_check_handle(L, handle)) {
         path = luaL_checklstring(L, 2, &path_len);
         watch = luaL_checkint(L, 3);
+        memset(&strings, 0 , sizeof(strings));
         ret = zoo_get_children(handle->zh, path, watch,  &strings);
         lua_pushinteger(L, ret);
         _zklua_build_string_vector(L, &strings);
@@ -1533,13 +1541,13 @@ static int zklua_get_children(lua_State *L)
 static int zklua_wget_children(lua_State *L)
 {
     size_t path_len = 0;
-    const char *real_local_watcherctx = NULL;
     const char *path = NULL;
     zklua_local_watcher_context_t *wrapper = NULL;
     struct String_vector strings;
     int ret = -1;
     int zhref = 0;
     int cbref = 0;
+    int ctxref = 0;
 
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
     zhref = _zklua_ref(L, 1);
@@ -1547,9 +1555,9 @@ static int zklua_wget_children(lua_State *L)
         path = luaL_checklstring(L, 2, &path_len);
         luaL_checktype(L, 3, LUA_TFUNCTION);
         cbref = _zklua_ref(L, 3);
-        real_local_watcherctx = luaL_checkstring(L, 4);
-        wrapper = _zklua_local_watcher_context_init(L,
-                (void *)real_local_watcherctx, zhref, cbref);
+        ctxref = _zklua_ref(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L, ctxref, zhref, cbref);
+        memset(&strings, 0 , sizeof(strings));
         ret = zoo_wget_children(handle->zh, path, local_watcher_dispatch,
                 (void *)wrapper, &strings);
         lua_pushinteger(L, ret);
@@ -1575,6 +1583,7 @@ static int zklua_get_children2(lua_State *L)
     if (_zklua_check_handle(L, handle)) {
         path = luaL_checklstring(L, 2, &path_len);
         watch = luaL_checkint(L, 3);
+        memset(&strings, 0 , sizeof(strings));
         ret = zoo_get_children2(handle->zh, path, watch, &strings, &stat);
         lua_pushinteger(L, ret);
         _zklua_build_string_vector(L, &strings);
@@ -1588,7 +1597,6 @@ static int zklua_get_children2(lua_State *L)
 static int zklua_wget_children2(lua_State *L)
 {
     size_t path_len = 0;
-    const char *real_local_watcherctx = NULL;
     const char *path = NULL;
     zklua_local_watcher_context_t *wrapper = NULL;
     struct String_vector strings;
@@ -1596,6 +1604,7 @@ static int zklua_wget_children2(lua_State *L)
     int ret = -1;
     int zhref = 0;
     int cbref = 0;
+    int ctxref = 0;
 
     zklua_handle_t *handle = luaL_checkudata(L, 1, ZKLUA_METATABLE_NAME);
     zhref = _zklua_ref(L, 1);
@@ -1603,9 +1612,9 @@ static int zklua_wget_children2(lua_State *L)
         path = luaL_checklstring(L, 2, &path_len);
         luaL_checktype(L, 3, LUA_TFUNCTION);
         cbref = _zklua_ref(L, 3);
-        real_local_watcherctx = luaL_checkstring(L, 4);
-        wrapper = _zklua_local_watcher_context_init(L,
-                (void *)real_local_watcherctx, zhref, cbref);
+        ctxref = _zklua_ref(L, 4);
+        wrapper = _zklua_local_watcher_context_init(L, ctxref, zhref, cbref);
+        memset(&strings, 0 , sizeof(strings));
         ret = zoo_wget_children2(handle->zh, path, local_watcher_dispatch,
                 (void *)wrapper, &strings, &stat);
         lua_pushinteger(L, ret);
@@ -1703,6 +1712,8 @@ static const luaL_Reg zklua[] =
     {"set2", zklua_set2},
     {"get_children", zklua_get_children},
     {"get_children2", zklua_get_children2},
+    {"wget_children", zklua_wget_children},
+    {"wget_children2", zklua_wget_children2},
     {"get_acl", zklua_get_acl},
     {"set_acl", zklua_set_acl},
     {NULL, NULL}

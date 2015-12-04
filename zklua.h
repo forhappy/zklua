@@ -41,12 +41,12 @@ struct zklua_handle_s {
 
 struct zklua_global_watcher_context_s {
     lua_State *L;
-    void *context;
+    int ctxref;
 };
 
 struct zklua_local_watcher_context_s {
     lua_State *L;
-    void *context;
+    int ctxref;
     int zhref;
     int cbref;
 };
