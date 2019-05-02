@@ -25,7 +25,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #endif
-_
 #include "zklua.h"
 
 static FILE *zklua_log_stream = NULL;
